@@ -1,0 +1,213 @@
+//
+//  InnerAIApp.swift
+//  InnerAI
+//
+//  Created by Bassam Fouad on 26/04/2024.
+//
+
+import SwiftUI
+import AVFoundation
+import RollbarNotifier
+import raygun4apple
+
+@main
+struct InnerAIApp: App {
+    
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    var body: some Scene {
+        Settings {
+            EmptyView()
+                .navigationTitle("Settings")
+        }
+    }
+}
+
+class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+    
+    private var statusItem: NSStatusItem!
+    private var popover: NSPopover!
+    var window: NSWindow?
+    var popupWindow: NSWindow?
+    var cameraWindow: NSWindow?
+    var popoverShow = true
+
+    var loginView: some View {
+        LoginView(viewModel: AppConfigurator.configureLoginViewModel()).environmentObject(self)
+    }
+    
+    var recordSettingView: some View {
+        RecordSettingsView().environmentObject(self)
+    }
+    
+    var colorScheme: NSAppearance.Name {
+        return NSApp.effectiveAppearance.name
+    }
+    
+    func lightColorSchemes() -> [NSAppearance.Name] {
+        return [.aqua, .vibrantLight, .accessibilityHighContrastVibrantLight, .accessibilityHighContrastAqua]
+    }
+
+    @MainActor func applicationDidFinishLaunching(_ notification: Notification) {
+        configureRayGun()
+        configureRollBar()
+        configureOverlayWindow()
+        configureCustomWindowPopup()
+        configureCameraWindow()
+        configurePopoverView(rootView: initialView())
+        configureStatusItem()
+        showPopover()
+    }
+    
+    func applicationWillResignActive(_ notification: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.hidePopOver()
+        }
+    }
+    
+    func configureRollBar() {
+        let config = RollbarConfig.mutableConfig(withAccessToken: "aa8b8b3e2e7e44148ca6e897ab5293e7")
+            config.loggingOptions.logLevel = .error
+            config.loggingOptions.crashLevel = .critical
+            config.telemetry.captureLog = true
+            Rollbar.initWithConfiguration(config)
+    }
+    
+    func configureRayGun() {
+        let raygunClient = RaygunClient.sharedInstance(apiKey: "Z4RluGeas5hPY17uTjkfWQ")
+        raygunClient.enableCrashReporting()
+    }
+    
+    func initialView() -> any View {
+        return UserSessionManager.isUserLoggedIn() ? recordSettingView : loginView
+    }
+    
+    func configureStatusItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        if let statusButton = statusItem.button {
+            let tintedBlackImage = NSImage(named: "status_bar_icon")
+            statusButton.image?.isTemplate = true
+            statusButton.image = tintedBlackImage
+            statusButton.action = #selector(togglePopover)
+        }
+    }
+    
+    func configureOverlayWindow() {
+        window = createWindow(rootView: EmptyView())
+        window?.makeKeyAndOrderFront(nil)
+        //hide it initially
+        hideWindow()
+    }
+    
+    func makeDefaultOverlayWindowsOnTop() {
+        window?.orderFrontRegardless()
+    }
+    
+    func showWindow() {
+        self.window?.contentView?.isHidden = false
+    }
+    
+    func hideWindow() {
+        self.window?.contentView?.isHidden = true
+    }
+    
+    @objc func togglePopover() {
+        
+        if let button = statusItem.button {
+            if popover.isShown {
+                self.popover.performClose(nil)
+            } else {
+                popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+            }
+        }
+        
+    }
+    
+}
+
+// MARK: Popover config and routing
+extension AppDelegate {
+    func configurePopoverView<Content: View>(rootView: Content) {
+        self.popover = NSPopover()
+        self.popover.appearance = NSAppearance(named: .aqua)
+        self.popover.contentSize = NSSize(width: 280, height: 600)
+        self.popover.behavior = .transient
+        self.popover.animates = false
+        self.popover.delegate = self
+        let hostingController = NSHostingController(rootView: rootView)
+        self.popover.contentViewController = hostingController
+    }
+    
+    func displayLoginView() {
+        hidePopOver()
+        self.popover.contentViewController = NSHostingController(rootView: loginView)
+        showPopover(duration: 0)
+    }
+    
+    func displayRecordSettingsView() {
+        hidePopOver()
+        self.popover.contentViewController = NSHostingController(rootView: recordSettingView)
+        showPopover(duration: 0)
+    }
+    
+    func displayUploadViewPopOver(fileInfo: FileInfo) {
+        hidePopOver()
+        self.popover.contentViewController = NSHostingController(rootView: UploadVideoView(viewModel: AppConfigurator.configureUploadViewModel(with: fileInfo)).environmentObject(self))
+        showPopover(duration: 0)
+    }
+    
+    func showPopover(duration: Double = 0.2) {
+        if let button = statusItem.button {
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+            }
+        }
+    }
+    
+    func hidePopOver() {
+        self.popover.performClose(nil)
+    }
+    
+}
+
+// MARK: Overlay views
+extension AppDelegate {
+    func diplaySelectRecordWindowView(completion: @escaping (_ selectedWindow: OpenedWindowInfo) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.hidePopOver()
+        }
+        self.window?.contentView = NSHostingView(rootView: SelectRecordWindowView(onSelectedWindow: {
+            self.showPopover()
+            completion($0)
+        }).environmentObject(self))
+        showWindow()
+    }
+    
+    func diplayVideoWindowView(withRecord config: RecordConfiguration, callback: @escaping (RecordingState) -> Void) {
+        hidePopOver()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.hidePopOver()
+        }
+        self.window?.contentView = NSHostingView(rootView: VideoView(recordConfig: config, onStateChanged: { state  in
+            callback(state)
+        }).environmentObject(self))
+        showWindow()
+    }
+    
+    func displayCameraPreview() {
+        hidePopOver()
+        self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(viewModel: ContentViewModel()).environmentObject(self))
+        showWindow()
+    }
+}
+
+extension AppDelegate: NSPopoverDelegate {
+    
+    func popoverDidShow(_ notification: Notification) {
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "popover"), object: ["is_show" : true])
+    }
+    func popoverDidClose(_ notification: Notification) {
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "popover"), object: ["is_show" : false])
+    }
+}
