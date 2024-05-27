@@ -53,7 +53,7 @@ struct UploadVideoView: View {
                         .frame(width: 80, height: 80) // Adjust size as needed
                         .aspectRatio(contentMode: .fill)
                     
-                    Text("Unable to upload, server not responding please")
+                    Text("Unable to upload, server not responding")
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.center)
@@ -73,7 +73,7 @@ struct UploadVideoView: View {
                     Button(action: {
                         appDelegate.displayRecordSettingsView()
                     }) {
-                        Text("Back to recored settings")
+                        Text("Create New Recording")
                             .font(.system(size: 12))
                             .fontWeight(.semibold)
                             .foregroundColor(.purple)

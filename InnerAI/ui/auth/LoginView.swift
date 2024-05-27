@@ -107,8 +107,8 @@ struct LoginView: View {
                 //         .fontWeight(.bold)
                 // }.buttonStyle(BorderlessButtonStyle())
                 
-                Link(destination: URL(string: "https://app-staging.innerai.com/login.html?source=screenrecorder")!) {
-                    Text("Login Online")
+                Link(destination: URL(string: AppSettings.shared.environment.platformUrl + "/home.html?source=screenrecorder")!) {
+                    Text("Login")
                         .fontWeight(.semibold)
                         .font(.title2)
                         .frame(maxWidth: .infinity, maxHeight: 20)
@@ -146,14 +146,13 @@ struct LoginView: View {
                 
                 HStack {
                     Text("Don't have an account?")
-                    Button(action: {
-                        // Action for Sign Up
-                    }) {
+                    Link(destination: URL(string: AppSettings.shared.environment.platformUrl + "/join.html?source=screenrecorder")!) {
                         Text("Sign Up")
                             .foregroundColor(.appPurple)
                             .underline()
                     }.buttonStyle(BorderlessButtonStyle()).offset(x: -5)
                 }
+                
             }
             .onChange(of: viewModel.isLoggedIn) { loggedIn in
                 if loggedIn {

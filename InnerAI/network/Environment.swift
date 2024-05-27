@@ -37,4 +37,13 @@ enum Environment: String {
             return "https://service.innerplay.io/cloud-upload-done"
         }
     }
+
+    var platformUrl: String {
+        switch self {
+        case .staging:
+            return "https://app-staging.innerai.com"
+        case .production:
+            return "https://app.innerai.com"
+        }
+    }
 }
