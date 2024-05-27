@@ -39,95 +39,104 @@ struct LoginView: View {
                     .font(.system(size: 14))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .foregroundColor(.appDarkgray)
                 
-                TextField("Email", text: $viewModel.email, onEditingChanged: { editing in
-                    isEditing = editing
-                })
-                .frame(height: 48)
-                .foregroundColor(.black)
-                .textFieldStyle(PlainTextFieldStyle())
-                .tint(.pink)
-                .padding([.horizontal], 8)
-                .cornerRadius(16)
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditing ? .hover : .gray))
-                .padding([.horizontal], 0)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.white)
-                )
+                // TextField("Email", text: $viewModel.email, onEditingChanged: { editing in
+                //     isEditing = editing
+                // })
+                // .frame(height: 48)
+                // .foregroundColor(.black)
+                // .textFieldStyle(PlainTextFieldStyle())
+                // .tint(.pink)
+                // .padding([.horizontal], 8)
+                // .cornerRadius(16)
+                // .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditing ? .hover : .gray))
+                // .padding([.horizontal], 0)
+                // .background(
+                //     RoundedRectangle(cornerRadius: 16)
+                //         .fill(.white)
+                // )
                 
-                ZStack {
-                    if isPasswordVisible {
-                        TextField("Password", text: $viewModel.password, onEditingChanged: { editing in
-                            isEditingPassword = editing
-                        })
-                        .frame(height: 48)
-                        .foregroundColor(.black)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .padding([.horizontal], 8)
-                        .padding(.trailing, 40) // Add padding from the right
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditingPassword ? .hover : .gray))
-                        .padding([.horizontal], 0)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.white)
-                        )
-                    } else {
-                        SecureField("Password", text: $viewModel.password)
-                        .frame(height: 48)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .foregroundColor(.black)
-                        .padding([.horizontal], 8)
-                        .padding(.trailing, 40) // Add padding from the right
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditingPassword ? .hover : .gray))
-                        .padding([.horizontal], 0)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.white)
-                        )
-                    }
+                // ZStack {
+                //     if isPasswordVisible {
+                //         TextField("Password", text: $viewModel.password, onEditingChanged: { editing in
+                //             isEditingPassword = editing
+                //         })
+                //         .frame(height: 48)
+                //         .foregroundColor(.black)
+                //         .textFieldStyle(PlainTextFieldStyle())
+                //         .padding([.horizontal], 8)
+                //         .padding(.trailing, 40) // Add padding from the right
+                //         .cornerRadius(16)
+                //         .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditingPassword ? .hover : .gray))
+                //         .padding([.horizontal], 0)
+                //         .background(
+                //             RoundedRectangle(cornerRadius: 16)
+                //                 .fill(.white)
+                //         )
+                //     } else {
+                //         SecureField("Password", text: $viewModel.password)
+                //         .frame(height: 48)
+                //         .textFieldStyle(PlainTextFieldStyle())
+                //         .foregroundColor(.black)
+                //         .padding([.horizontal], 8)
+                //         .padding(.trailing, 40) // Add padding from the right
+                //         .cornerRadius(16)
+                //         .overlay(RoundedRectangle(cornerRadius: 16).stroke(isEditingPassword ? .hover : .gray))
+                //         .padding([.horizontal], 0)
+                //         .background(
+                //             RoundedRectangle(cornerRadius: 16)
+                //                 .fill(.white)
+                //         )
+                //     }
                     
-                    Button(action: {
-                        isPasswordVisible.toggle()
-                    }) {
-                        Image(systemName: isPasswordVisible ? "eye" : "eye.slash")
-                            .padding(.trailing, 8)
-                            .foregroundColor(.appPurple)
-                    }
-                    .buttonStyle(BorderlessButtonStyle()).offset(x: 100)
-                }
+                //     Button(action: {
+                //         isPasswordVisible.toggle()
+                //     }) {
+                //         Image(systemName: isPasswordVisible ? "eye" : "eye.slash")
+                //             .padding(.trailing, 8)
+                //             .foregroundColor(.appPurple)
+                //     }
+                //     .buttonStyle(BorderlessButtonStyle()).offset(x: 100)
+                // }
                 
-                Button(action: {
-                    // Action for forgot password
-                }) {
-                    Text("Forgot your password?")
-                        .font(.system(size: 12))
-                        .fontWeight(.bold)
-                        .foregroundColor(.appDarkgray)
+                // Button(action: {
+                //     // Action for forgot password
+                // }) {
+                //     Text("Forgot your password?")
+                //         .font(.system(size: 12))
+                //         .fontWeight(.bold)
+                // }.buttonStyle(BorderlessButtonStyle())
+                
+                Link(destination: URL(string: "https://app-staging.innerai.com/login.html?source=screenrecorder")!) {
+                    Text("Login Online")
+                        .fontWeight(.semibold)
+                        .font(.title2)
+                        .frame(maxWidth: .infinity, maxHeight: 20)
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(Color.appPurple)
+                        .cornerRadius(12)
                 }.buttonStyle(BorderlessButtonStyle())
-                
-                Button(action: {
-                    if !viewModel.isLoading {
-                        viewModel.login()
-                    }
-                }) {
-                    if viewModel.isLoading {
-                        ProgressView()
 
-                    } else {
-                        Text("Login")
-                            .fontWeight(.semibold)
-                            .font(.title2)
-                            .frame(maxWidth: .infinity, maxHeight: 20)
-                            .padding()
-                            .foregroundColor(.white)
-                            .background(viewModel.enableLoginButton ? .appPurple : .appPurple.opacity(0.6))
-                            .cornerRadius(12)
-                    }
-                }.buttonStyle(BorderlessButtonStyle())
+                // Button(action: {
+                //     if !viewModel.isLoading {
+                //         viewModel.login()
+                //     }
+                // }) {
+                //     if viewModel.isLoading {
+                //         ProgressView()
+
+                //     } else {
+                //         Text("Login")
+                //             .fontWeight(.semibold)
+                //             .font(.title2)
+                //             .frame(maxWidth: .infinity, maxHeight: 20)
+                //             .padding()
+                //             .foregroundColor(.white)
+                //             .background(viewModel.enableLoginButton ? .appPurple : .appPurple.opacity(0.6))
+                //             .cornerRadius(12)
+                //     }
+                // }.buttonStyle(BorderlessButtonStyle())
                 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -137,7 +146,6 @@ struct LoginView: View {
                 
                 HStack {
                     Text("Don't have an account?")
-                        .foregroundColor(.appDarkgray)
                     Button(action: {
                         // Action for Sign Up
                     }) {
@@ -152,7 +160,7 @@ struct LoginView: View {
                     appDelegate.displayRecordSettingsView()
                 }
             }
-            .frame(width: 260, height: 380)
+            .frame(width: 260, height: 200)
             .padding()
             .textFieldStyle(.roundedBorder)
             .background(

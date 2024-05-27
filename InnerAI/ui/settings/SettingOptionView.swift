@@ -21,7 +21,6 @@ struct SettingOptionView: View {
             Image(model.icon)
                 .resizable()
                 .frame(width: 20, height: 20)
-                .foregroundColor(model.rightIcon == .check && model.isSelected ? .appPurple: .appDarkgray)
                 .padding()
             
             // Label

@@ -617,11 +617,11 @@
 				CURRENT_PROJECT_VERSION = 15;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = 9RBXXSRPD6;
+				DEVELOPMENT_TEAM = DCDPY3GPM8;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = /Users/bassam/freelance/InnerAI/InnerAI/Info.plist;
+				INFOPLIST_FILE = InnerAI/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -648,11 +648,11 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = 9RBXXSRPD6;
+				DEVELOPMENT_TEAM = DCDPY3GPM8;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = /Users/bassam/freelance/InnerAI/InnerAI/Info.plist;
+				INFOPLIST_FILE = InnerAI/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

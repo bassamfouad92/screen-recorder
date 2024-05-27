@@ -9,6 +9,7 @@ import SwiftUI
 import AVFoundation
 import RollbarNotifier
 import raygun4apple
+import Combine
 
 @main
 struct InnerAIApp: App {
@@ -123,6 +124,55 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         
     }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            switch url.host {
+            case "post-login":
+                let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+                let email = queryItems?.first(where: { $0.name == "email" })?.value
+                let apiKey = queryItems?.first(where: { $0.name == "api_key" })?.value
+                if let email = email, let apiKey = apiKey {
+                    performLogin(email: email, apiKey: apiKey)
+                }
+            case "open-app":
+                if UserSessionManager.isUserLoggedIn() {
+                    DispatchQueue.main.async {
+                        self.displayRecordSettingsView()
+                    }
+                }
+            default:
+                continue
+            }
+        }
+    }
+
+    private var cancellables = Set<AnyCancellable>()  // Add this line
+
+    private func performLogin(email: String, apiKey: String) {
+        let loginService = LoginServiceImp(httpClient: AppConfigurator.client)
+        loginService.login(email: email, password: apiKey)
+            .receive(on: DispatchQueue.main)  // Ensure UI updates are on the main thread
+            .sink(receiveCompletion: { [weak self] completion in
+                switch completion {
+                case .finished:
+                    print("Login successful")
+                case .failure(let error):
+                    print("Login failed: \(error.localizedDescription)")
+                    // Optionally handle login failure, e.g., show an error message
+                }
+            }, receiveValue: { [weak self] loginResponse in
+                print("Login response: \(loginResponse)")
+                // Save the login details in UserSessionManager
+                UserSessionManager.apiKey = apiKey
+                UserSessionManager.currentSpace = loginResponse.spaceId
+                UserSessionManager.userId = loginResponse.userId
+                // Handle successful login, update session, etc.
+                self?.displayRecordSettingsView()  // Display the record settings view
+            })
+            .store(in: &cancellables)
+    }
+
     
 }
 
