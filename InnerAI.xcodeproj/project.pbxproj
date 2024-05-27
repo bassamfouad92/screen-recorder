@@ -114,7 +114,7 @@
 		589D476F2BE5890D00D7DE07 /* ActivityIndicatorWithText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndicatorWithText.swift; sourceTree = "<group>"; };
 		589D47712BE58BDF00D7DE07 /* NSImage+Tint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSImage+Tint.swift"; sourceTree = "<group>"; };
 		58A44A602BDEC104002040B4 /* CustomPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomPopupView.swift; sourceTree = "<group>"; };
-		58D7CD8B2BDBAE9D00ADEDA4 /* InnerAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InnerAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		58D7CD8B2BDBAE9D00ADEDA4 /* Screen Recoder by Inner AI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Screen Recoder by Inner AI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		58D7CD8E2BDBAE9D00ADEDA4 /* InnerAIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InnerAIApp.swift; sourceTree = "<group>"; };
 		58D7CD922BDBAEA100ADEDA4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58D7CD952BDBAEA100ADEDA4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
@@ -313,7 +313,7 @@
 		58D7CD8C2BDBAE9D00ADEDA4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				58D7CD8B2BDBAE9D00ADEDA4 /* InnerAI.app */,
+				58D7CD8B2BDBAE9D00ADEDA4 /* Screen Recoder by Inner AI.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -374,7 +374,7 @@
 				5819B7722BFF400B006C5F12 /* raygun4apple */,
 			);
 			productName = InnerAI;
-			productReference = 58D7CD8B2BDBAE9D00ADEDA4 /* InnerAI.app */;
+			productReference = 58D7CD8B2BDBAE9D00ADEDA4 /* Screen Recoder by Inner AI.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -612,12 +612,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = InnerAI/InnerAI.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = DCDPY3GPM8;
+				DEVELOPMENT_TEAM = 944MTH5RC2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -631,8 +632,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_BUNDLE_IDENTIFIER = com.app.innerai;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenrecorder.innerai;
+				PRODUCT_NAME = "Screen Recoder by Inner AI";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -644,11 +646,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = InnerAI/InnerAI.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = DCDPY3GPM8;
+				DEVELOPMENT_TEAM = 944MTH5RC2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -662,8 +665,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_BUNDLE_IDENTIFIER = com.app.innerai;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenrecorder.innerai;
+				PRODUCT_NAME = "Screen Recoder by Inner AI";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};

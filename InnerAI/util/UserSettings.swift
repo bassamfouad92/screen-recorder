@@ -17,7 +17,7 @@ struct AppSettings {
     
     // Private initializer to prevent external initialization
     private init() {
-        environment = .staging // Default environment
+        environment = .production // Default environment
     }
 }
 
