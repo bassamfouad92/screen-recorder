@@ -20,7 +20,6 @@ extension AppDelegate {
             window.titlebarAppearsTransparent = true
             window.styleMask = .fullSizeContentView
             window.isReleasedWhenClosed = false
-            window.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .stationary, .ignoresCycle]
             window.title = title
             return window
         }

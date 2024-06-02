@@ -59,11 +59,8 @@ struct VideoView: View {
                 }
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .background(recordConfig.videoWindowType == .camera ? .white.opacity(0.05) : .clear)
-            .edgesIgnoringSafeArea(.all)
-            .padding()
+            .background(.clear)
             .overlay(
-                ZStack {
                     HStack {
                         ControlPanelView(restartRecording: $restartPerformed, isPopupDisplayed: $displayingActionPopup, onClicked: { action in
                             switch action {
@@ -92,7 +89,6 @@ struct VideoView: View {
                             self.offset = offset
                         }, contentSize: CGSize(width: 220, height: 60)).offset(x: -44)
                     }.offset(x: offset == .zero ? 250 : 0, y: -60)
-                }
                 , alignment: .bottomLeading)
     }
     

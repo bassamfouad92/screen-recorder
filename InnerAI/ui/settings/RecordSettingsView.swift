@@ -64,11 +64,10 @@ struct RecordSettingsView: View {
                 if showRecordSettings {
                     Button(action: {
                         if settingsViewType == .quit {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                 settingsViewType = .none
-                            }
+                        } else {
+                            settingsViewType = .quit
                         }
-                        settingsViewType = .quit
                     }) {
                         Image("menu_icon") // Example system image for menu button
                             .resizable()
@@ -90,30 +89,24 @@ struct RecordSettingsView: View {
                 VStack(spacing: 10) {
                    SettingOptionView(model: $videoSettingOption, OnSelected: {}, onTap: {
                        if settingsViewType == .video {
-                           DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                settingsViewType = .none
-                           }
+                       } else {
+                           settingsViewType = .video
                        }
-                       settingsViewType = .none
-                       settingsViewType = .video
                    })
                    SettingOptionView(model: $cameraSettingOption, OnSelected: {}, onTap: {
                        if settingsViewType == .camera {
-                           DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                settingsViewType = .none
-                           }
+                       } else {
+                           settingsViewType = .camera
                        }
-                       settingsViewType = .none
-                       settingsViewType = .camera
                    })
                    SettingOptionView(model: $micSettingOption, OnSelected: {}, onTap: {
                        if settingsViewType == .microphone {
-                           DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                               settingsViewType = .none
-                           }
+                           settingsViewType = .none
+                       } else {
+                           settingsViewType = .microphone
                        }
-                       settingsViewType = .none
-                       settingsViewType = .microphone
                    })
                }.onAppear {
                    viewModel.configureCameraAndMic()
@@ -183,10 +176,10 @@ struct RecordSettingsView: View {
                 // Extract userInfo dictionary from the notification object
                 if let payload = notification.object as? [String: Bool], let popoverShowing = payload["is_show"] {
                     if !popoverShowing {
+                        settingsViewType = .none
                         videoSettingOption.isSelected = false
                         micSettingOption.isSelected = false
                         cameraSettingOption.isSelected = false
-                        settingsViewType = .none
                     }
                 }
             }
@@ -375,6 +368,10 @@ extension RecordSettingsView {
     
     func routeToUploadView(fileInfo: FileInfo) {
         appDelegate.displayUploadViewPopOver(fileInfo: fileInfo)
+    }
+    
+    func routeToCropView() {
+        appDelegate.diplayCropWindowView()
     }
 }
 

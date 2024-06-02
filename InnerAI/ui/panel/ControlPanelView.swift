@@ -28,7 +28,6 @@ struct ControlPanelView: View {
     var onClicked: (RecordingAction) -> Void
     
     var body: some View {
-        VStack {
             LazyHStack(spacing: 10) {
                 Button(action: {
                     onClicked(.stop)
@@ -36,9 +35,8 @@ struct ControlPanelView: View {
                     Image("stop_icon")
                         .resizable()
                         .frame(width: 24, height: 24)
-                    TimerView(timerString: $timerString, isRestart: $restartRecording, isPlaying: $isPlaying, lastTime: $lastTime)
                 }.buttonStyle(.plain)
-                
+                TimerView(timerString: $timerString, isRestart: $restartRecording, isPlaying: $isPlaying, lastTime: $lastTime)
                 if isPlaying {
                     Button(action: {
                         isPlaying = false
@@ -79,10 +77,6 @@ struct ControlPanelView: View {
                 Text(" ")
                     .frame(width: 24, height: 24)
             }
-            .padding()
-            .background(.black)
-            .cornerRadius(70)
-        }.frame(height: 60)
             .onChange(of: restartRecording) { newValue in
                 if newValue {
                     restartRecording = false
@@ -95,6 +89,10 @@ struct ControlPanelView: View {
                     isPlaying = true
                 }
             }
+            .frame(height: 25)
+            .padding()
+            .background(.black)
+            .cornerRadius(70)
     }
 }
 

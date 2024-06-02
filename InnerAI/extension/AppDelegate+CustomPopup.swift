@@ -44,6 +44,9 @@ extension AppDelegate {
     
     func showCameraWindow(viewModel: ContentViewModel, presentationStyle: CameraViewPresentationStyle) {
         self.cameraWindow?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(presentationStyle: presentationStyle, viewModel: viewModel).environmentObject(self))
+        if presentationStyle == .full {
+            cameraWindow?.level = .normal
+        }
         cameraWindow?.makeKeyAndOrderFront(nil)
         cameraWindow?.contentView?.isHidden = false
     }

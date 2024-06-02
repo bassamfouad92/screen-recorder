@@ -107,7 +107,9 @@ struct LoginView: View {
                 //         .fontWeight(.bold)
                 // }.buttonStyle(BorderlessButtonStyle())
                 
-                Link(destination: URL(string: AppSettings.shared.environment.platformUrl + "/home.html?source=screenrecorder")!) {
+                Button(action: {
+                    appDelegate.loginWithBrowser()
+                }) {
                     Text("Login")
                         .fontWeight(.semibold)
                         .font(.title2)
@@ -116,7 +118,8 @@ struct LoginView: View {
                         .foregroundColor(.white)
                         .background(Color.appPurple)
                         .cornerRadius(12)
-                }.buttonStyle(BorderlessButtonStyle())
+                }
+                .buttonStyle(BorderlessButtonStyle())
 
                 // Button(action: {
                 //     if !viewModel.isLoading {

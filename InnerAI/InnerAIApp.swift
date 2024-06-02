@@ -59,13 +59,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         configureStatusItem()
         showPopover()
     }
-    
-    func applicationWillResignActive(_ notification: Notification) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+
+    func loginWithBrowser() {
+        let urlString = AppSettings.shared.environment.platformUrl + "/home.html?source=screenrecorder"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.hidePopOver()
         }
     }
     
+    func applicationDidBecomeActive(_ notification: Notification) {
+        print("App in fourground!!!")
+    }
+    
+    func applicationDidResignActive(_ notification: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.hidePopOver()
+        }
+    }
+
+    
+        
     func configureRollBar() {
         let config = RollbarConfig.mutableConfig(withAccessToken: "aa8b8b3e2e7e44148ca6e897ab5293e7")
             config.loggingOptions.logLevel = .error
@@ -187,6 +204,7 @@ extension AppDelegate {
         self.popover.delegate = self
         let hostingController = NSHostingController(rootView: rootView)
         self.popover.contentViewController = hostingController
+        self.popover.contentViewController?.view.window?.makeKey()
     }
     
     func displayLoginView() {
@@ -248,6 +266,15 @@ extension AppDelegate {
     func displayCameraPreview() {
         hidePopOver()
         self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(viewModel: ContentViewModel()).environmentObject(self))
+        showWindow()
+    }
+    
+    func diplayCropWindowView() {
+        hidePopOver()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.hidePopOver()
+        }
+        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView().environmentObject(self))
         showWindow()
     }
 }

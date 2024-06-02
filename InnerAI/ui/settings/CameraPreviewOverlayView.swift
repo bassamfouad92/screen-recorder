@@ -26,12 +26,10 @@ struct CameraPreviewOverlayView: View {
                 CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
             }
         }
-        .allowsHitTesting(presentationStyle == .partial)
         .onAppear {
             viewModel.checkAuthorization()
         }
         .frame(maxWidth: screenSize.width, maxHeight: screenSize.height, alignment: .bottomLeading)
-            .padding()
             .background(.clear)
     }
 }
