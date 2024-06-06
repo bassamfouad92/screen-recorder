@@ -95,7 +95,8 @@ struct UploadCompletionRequest: Request {
         return [
             "doc_id": docId,
             "current_space": currentSpace,
-            "api_key": apiKey
+            "api_key": apiKey, 
+            "shared_with": "everyone"
         ]
     }
     

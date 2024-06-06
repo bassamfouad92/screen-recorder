@@ -169,6 +169,7 @@ struct RecordSettingsView: View {
             Task {
                 await setUpCameraCapture()
                 await setUpAudioCapture()
+                setUpScreenCapture()
             }
             
             //observing popover show and hide
@@ -391,6 +392,14 @@ extension RecordSettingsView {
             return
         }
         print("Auhtorized microphone")
+    }
+
+    func setUpScreenCapture() {
+        let hasScreenAccess = CGPreflightScreenCaptureAccess()
+        if !hasScreenAccess {
+            CGRequestScreenCaptureAccess()
+        }
+        print("Screen capture access requested")
     }
     
     func isCameraMicPermission() -> Bool {
