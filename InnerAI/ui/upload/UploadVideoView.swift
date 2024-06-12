@@ -86,6 +86,9 @@ struct UploadVideoView: View {
             .onChange(of: viewModel.uploadedVideoUrl, perform: { url in
                 if !url.isEmpty {
                     openURLInDefaultBrowser(url)
+                    //copy url to clipboard
+                  NSPasteboard.general.declareTypes([.string], owner: nil)
+        NSPasteboard.general.setString(url, forType: .string)
                     appDelegate.displayRecordSettingsView()
                 }
             })

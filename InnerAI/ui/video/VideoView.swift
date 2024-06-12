@@ -173,10 +173,6 @@ extension VideoView {
 extension VideoView {
     private func initRecorder() async {
         do {
-            // Check for screen recording permission, make sure your terminal has screen recording permission
-            guard CGPreflightScreenCaptureAccess() else {
-                throw RecordingError("No screen capture permission")
-            }
             url = URL(filePath: FileManager.default.currentDirectoryPath).appending(path: "recording-bsm \(Date()).mov")
             screenRecordManager = ScreenRecordManager()
             screenRecordManager?.audioDeviceId = recordConfig.audioDeviceId ?? 0
