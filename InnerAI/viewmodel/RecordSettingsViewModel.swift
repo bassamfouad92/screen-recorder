@@ -7,7 +7,9 @@
 
 import Foundation
 import AVFoundation
-
+import Combine
+import AppKit
+    
 final class RecordSettingsViewModel: ObservableObject {
     
     let deviceManager: AVCaptureDeviceManager
@@ -79,6 +81,52 @@ final class RecordSettingsViewModel: ObservableObject {
         }
     }
 
+    private var cancellables = Set<AnyCancellable>()
+
+    func checkForUpdates() {
+        guard let url = URL(string: "https://cdn-client.innerplay.io/v2-screenrec/versions.json") else { return }
+
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map { $0.data }
+            .decode(type: [AppVersion].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] versions in
+                self?.handleVersionCheck(versions: versions)
+            })
+            .store(in: &cancellables)
+    }
+
+    private func handleVersionCheck(versions: [AppVersion]) {
+        guard let latestVersion = versions.max(by: { $0.version < $1.version }) else { return }
+        let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+        if latestVersion.version > currentVersion {
+            // Show update popup
+            let alert = NSAlert()
+            alert.messageText = "Update Available"
+            alert.informativeText = "A new version (\(latestVersion.version)) is available. Would you like to update?"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Update")
+            
+            if latestVersion.required {
+                alert.addButton(withTitle: "Quit")
+            } else {
+                alert.addButton(withTitle: "Cancel")
+            }
+            
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                // Open latestVersion.download_link in browser
+                if let url = URL(string: latestVersion.download_link) {
+                    NSWorkspace.shared.open(url)
+                    NSApplication.shared.terminate(nil)
+                }
+            } else if latestVersion.required && response == .alertSecondButtonReturn {
+                // Quit the application
+                NSApplication.shared.terminate(nil)
+            }
+        }
+    }
+
     init() {
         self.selectedVideoOption = videoOptions[0] as! VideoOption
         self.deviceManager = AVCaptureDeviceManager.shared
@@ -144,4 +192,10 @@ extension RecordSettingsViewModel {
     func logout() {
         UserSessionManager.logout()
     }
+}
+
+struct AppVersion: Decodable {
+    let version: String
+    let download_link: String
+    let required: Bool
 }
