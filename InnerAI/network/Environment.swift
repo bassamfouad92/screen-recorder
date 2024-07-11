@@ -14,7 +14,7 @@ enum Environment: String {
     var baseUrl: String {
         switch self {
         case .staging:
-            return "https://platformapi-staging.innerplay.io"
+            return "https://platformapi-staging.innerai.com"
         case .production:
             return "https://platformapi.innerplay.io"
         }
