@@ -16,7 +16,7 @@ enum Environment: String {
         case .staging:
             return "https://platformapi-staging.innerai.com"
         case .production:
-            return "https://platformapi.innerplay.io"
+            return "https://platformapi.innerai.com"
         }
     }
     
