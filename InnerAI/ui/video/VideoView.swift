@@ -194,6 +194,7 @@ extension VideoView {
         
         Task {
            await initRecorder()
+           try await screenRecordManager?.start()
         }
     }
 

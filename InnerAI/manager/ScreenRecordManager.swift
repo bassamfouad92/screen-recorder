@@ -62,7 +62,11 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
     
     var onStopStream: (_ stream: SCStream) -> Void = { stream in }
     var isStreamStopped = false
-    
+    var mode: RecordMode = .h264_sRGB
+    var lastSampleBuffer: CMSampleBuffer?
+    var sessionStarted = false
+    var firstSampleTime: CMTime = .zero
+
     func record(displayID: CGDirectDisplayID, selectedWindow: SCWindow?, cameraWindow: SCWindow?, excludedWindows: [SCWindow]? = []) async throws {
         let conf = SCStreamConfiguration()
         conf.width = 2
@@ -86,14 +90,17 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_MPEG_5_1_D
         
         audioSettings = [
-            AVNumberOfChannelsKey : 6,
-            AVFormatIDKey : kAudioFormatMPEG4AAC_HE,
+            AVNumberOfChannelsKey: 6,
+            AVFormatIDKey : kAudioFormatMPEG4AAC,
             AVSampleRateKey : 44100,
             AVChannelLayoutKey : NSData(bytes: &channelLayout, length: MemoryLayout.size(ofValue: channelLayout))
         ] as [String : Any]
         
-        conf.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(frameRate))
+        conf.queueDepth = 6
+        //conf.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(frameRate))
         conf.showsCursor = true
+        conf.pixelFormat = kCVPixelFormatType_32BGRA // 'BGRA'
+        conf.colorSpaceName = CGColorSpace.sRGB
         conf.capturesAudio = true
         conf.sampleRate = audioSettings["AVSampleRateKey"] as! Int
         conf.channelCount = audioSettings["AVNumberOfChannelsKey"] as! Int
@@ -108,7 +115,6 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
             conf.width = Int(displaySize.width) * displayScaleFactor
             conf.height = Int(displaySize.height) * displayScaleFactor
         }
-        
         let sharableContent = try await SCShareableContent.current
         
         guard let display = sharableContent.displays.first(where: { $0.displayID == displayID }) else {
@@ -132,12 +138,15 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         do {
             try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: .global())
             try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: .global())
-            initVideo(conf: conf)
-            try await stream.startCapture()
+            initVideo(conf: conf, displayScaleFactor: displayScaleFactor, displaySize: displaySize)
         } catch {
             assertionFailure("capture failed")
             return
         }
+    }
+    
+    func start() async throws {
+        try await stream.startCapture()
     }
     
     private func getFilePath() -> String {
@@ -173,7 +182,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
 }
 
 extension ScreenRecordManager {
-    private func initVideo(conf: SCStreamConfiguration) {
+    private func initVideo(conf: SCStreamConfiguration, displayScaleFactor: Int, displaySize: CGSize) {
         
         startTime = nil
         let fileEnding = videoFormat
@@ -185,26 +194,43 @@ extension ScreenRecordManager {
         }
 
         filePath = "\(getFilePath())\(Date()).\(fileEnding)"
-        videoWriter = try? AVAssetWriter.init(outputURL: URL(fileURLWithPath: filePath), fileType: fileType!)
-        let encoderIsH265 = self.encoder == .h265
-        let fpsMultiplier: Double = Double(frameRate/8)
-        let encoderMultiplier: Double = encoderIsH265 ? 0.5 : 0.9
-        let targetBitrate = (Double(conf.width) * Double(conf.height) * fpsMultiplier * encoderMultiplier * videoQuality)
-        let videoSettings: [String: Any] = [
-            AVVideoCodecKey: encoderIsH265 ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
-            // yes, not ideal if we want more than these encoders in the future, but it's ok for now
-            AVVideoWidthKey: conf.width,
-            AVVideoHeightKey: conf.height,
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: Int(targetBitrate),
-                AVVideoExpectedSourceFrameRateKey: frameRate
-            ] as [String : Any]
-        ]
-        vwInput = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: videoSettings)
-        awInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioSettings)
+        videoWriter = try? AVAssetWriter(url: URL(fileURLWithPath: filePath), fileType: fileType!)
+        // AVAssetWriterInput supports maximum resolution of 4096x2304 for H.264
+        // Downsize to fit a larger display back into in 4K
+        let videoSize = downsizedVideoSize(source: displaySize, scaleFactor: displayScaleFactor, mode: mode)
+
+        // Use the preset as large as possible, size will be reduced to screen size by computed videoSize
+        guard let assistant = AVOutputSettingsAssistant(preset: mode.preset) else {
+            return
+        }
+        
+        do {
+            assistant.sourceVideoFormat = try CMVideoFormatDescription(videoCodecType: mode.videoCodecType, width: videoSize.width, height: videoSize.height)
+        } catch {
+            print("Assistant error")
+        }
+
+        guard var outputSettings = assistant.videoSettings else {
+            return
+        }
+        outputSettings[AVVideoWidthKey] = videoSize.width
+        outputSettings[AVVideoHeightKey] = videoSize.height
+
+        // Configure video color properties and compression properties based on RecordMode
+        // See AVVideoSettings.h and VTCompressionProperties.h
+        outputSettings[AVVideoColorPropertiesKey] = mode.videoColorProperties
+
+        if let videoProfileLevel = mode.videoProfileLevel {
+            var compressionProperties: [String: Any] = outputSettings[AVVideoCompressionPropertiesKey] as? [String: Any] ?? [:]
+            compressionProperties[AVVideoProfileLevelKey] = videoProfileLevel
+            outputSettings[AVVideoCompressionPropertiesKey] = compressionProperties as NSDictionary
+        }
+        
+        vwInput = AVAssetWriterInput(mediaType: .video, outputSettings: outputSettings)
+        //awInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioSettings)
         micInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioSettings)
         vwInput.expectsMediaDataInRealTime = true
-        awInput.expectsMediaDataInRealTime = true
+       // awInput.expectsMediaDataInRealTime = true
         micInput.expectsMediaDataInRealTime = true
         
         /*self.audioOutputURL = URL(filePath: FileManager.default.currentDirectoryPath).appending(path: "fouad-recording \(Date()).\(fileEnding)")
@@ -222,7 +248,6 @@ extension ScreenRecordManager {
         /*if ((audioWriter?.canAdd(awInput)) != nil) {
             audioWriter?.add(awInput)
         }*/
-
         if recordMic {
             print("Record Microphone on!!!!")
             if videoWriter.canAdd(micInput) {
@@ -290,7 +315,7 @@ extension ScreenRecordManager {
     }
     
     private func stopWriting() async {
-        vwInput.markAsFinished()
+        //vwInput.markAsFinished()
         //awInput.markAsFinished()
         if recordMic {
             micInput.markAsFinished()
@@ -298,17 +323,8 @@ extension ScreenRecordManager {
             audioEngine.stop()
         }
         
-        let adjustedSessionTime: CMTime
-
-        if let pauseStartTime = pauseStartTime {
-            // Calculate the adjusted session time based on the pause duration
-            let time = CMTimeMakeWithSeconds(pauseStartTime, preferredTimescale: 600)
-            adjustedSessionTime = CMTimeSubtract(sessionTime, time)
-        } else {
-            adjustedSessionTime = sessionTime
-        }
-        
-        videoWriter.endSession(atSourceTime: adjustedSessionTime)
+        videoWriter.endSession(atSourceTime: lastSampleBuffer?.presentationTimeStamp ?? .zero)
+        vwInput.markAsFinished()
         await videoWriter.finishWriting()
         /*audioWriter?.endSession(atSourceTime: sessionTime)
         audioWriter?.finishWriting {
@@ -341,29 +357,42 @@ extension ScreenRecordManager {
     
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
         
-        
+        // Return early if session hasn't started yet
+        //guard sessionStarted else { return }
+
         guard sampleBuffer.isValid, !isPause else {
             // ****** Note save buffer time during pause *********
             sampleBufferAfterTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
             return
         }
         
+        // Retrieve the array of metadata attachments from the sample buffer
+        guard let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
+              let attachments = attachmentsArray.first
+        else { return }
+
+        // Validate the status of the frame. If it isn't `.complete`, return
+        guard let statusRawValue = attachments[SCStreamFrameInfo.status] as? Int,
+              let status = SCFrameStatus(rawValue: statusRawValue),
+              status == .complete
+        else { return }
+        
+        
         switch outputType {
         case .screen:
-            guard let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
-                  let attachments = attachmentsArray.first else { return }
-            guard let statusRawValue = attachments[SCStreamFrameInfo.status] as? Int,
-                  let status = SCFrameStatus(rawValue: statusRawValue),
-                  status == .complete else { return }
             
             if videoWriter != nil && videoWriter?.status == .writing, startTime == nil {
                 startTime = Date.now
                 sessionTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                videoWriter.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+                videoWriter.startSession(atSourceTime: sessionTime)
+                sessionStarted = true
+                //videoWriter.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             }
             
-            let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            guard sessionStarted else { return }
             
+            let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
             if pauseStartTime != nil {
                 
                 let adjustedPresentationTime = CMTimeSubtract(presentationTime, pausedDuration)
@@ -378,6 +407,7 @@ extension ScreenRecordManager {
                 sampleBufferBeforeTime = CMSampleBufferGetPresentationTimeStamp(adjustedSampleBuffer)
                 
                 if vwInput.isReadyForMoreMediaData {
+                    lastSampleBuffer = sampleBuffer
                     if !vwInput.append(adjustedSampleBuffer) {
                         print("Failed to append adjusted sample buffer to video writer input")
                     }
@@ -389,6 +419,9 @@ extension ScreenRecordManager {
                 sampleBufferBeforeTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
                 
                 if vwInput.isReadyForMoreMediaData {
+                    
+                    lastSampleBuffer = sampleBuffer
+
                     if !vwInput.append(sampleBuffer) {
                         print("Failed to append sample buffer to video writer input")
                     }
@@ -428,6 +461,7 @@ extension ScreenRecordManager {
         print("closing stream with error:\n", error,
               "\nthis might be due to the window closing or the user stopping from the sonoma ui")
         isStreamStopped = true
+        sessionTime = CMSampleBufferGetPresentationTimeStamp(lastSampleBuffer!)
         onStopStream(stream)
     }
 }

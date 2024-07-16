@@ -288,7 +288,7 @@ struct ScreenRecorder {
 
 
 // AVAssetWriterInput supports maximum resolution of 4096x2304 for H.264
-private func downsizedVideoSize(source: CGSize, scaleFactor: Int, mode: RecordMode) -> (width: Int, height: Int) {
+ func downsizedVideoSize(source: CGSize, scaleFactor: Int, mode: RecordMode) -> (width: Int, height: Int) {
     let maxSize = mode.maxSize
 
     let w = source.width * Double(scaleFactor)
