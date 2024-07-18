@@ -350,6 +350,7 @@ extension RecordSettingsView {
            videoSettingOption.title = selectedWindow.title
            viewModel.setSelectedVideo(with: option)
            viewModel.configureRecordConfig(videoWindowType: .specific, windowInfo: selectedWindow)
+           routeToCropView()
         })
     }
     
@@ -363,6 +364,8 @@ extension RecordSettingsView {
                 showRecordSettings = true
                 routeToUploadView(fileInfo: fileInfo as! FileInfo)
             default:
+                // reset to default state i.e full screen
+                viewModel.recordConfig = RecordConfiguration(videoWindowType: .fullScreen, windowInfo: nil)
                 showRecordSettings = true
             }
         })
@@ -373,7 +376,7 @@ extension RecordSettingsView {
     }
     
     func routeToCropView() {
-        appDelegate.diplayCropWindowView()
+        appDelegate.diplayCropWindowView(showWith: viewModel.recordConfig.windowInfo?.runningApplicationName ?? "")
     }
 }
 

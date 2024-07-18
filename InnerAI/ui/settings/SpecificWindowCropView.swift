@@ -28,10 +28,12 @@ struct RectangleMaskShape: Shape {
 struct SpecificWindowCropView: View {
     
     @State var window: SCWindow?
+    var runningApplicationName: String = ""
     let screenSize = NSScreen.main?.frame.size ?? .zero
     let maskPositionX: CGFloat = 0
     let maskPositionY: CGFloat = 0
-    
+    var onWindowFront: (_ windowBottomPos: CGPoint) -> Void
+
     var body: some View {
         GeometryReader { geometry in
             Color.black.opacity(0.6)
@@ -76,9 +78,11 @@ struct SpecificWindowCropView: View {
             }
             
             DispatchQueue.main.async {
-                if let window = shareableContent.windows.first(where: { $0.owningApplication?.applicationName ?? "" == "Notes" }) {
-                    switchToApp(named: "Notes")
+                if let window = shareableContent.windows.first(where: { $0.owningApplication?.applicationName ?? "" == runningApplicationName}) {
+                    switchToApp(named: runningApplicationName)
                     print("Window size: \(window.frame)")
+                    print("Window top left: \(window.frame.origin.x), \(window.frame.origin.y)")
+                    onWindowFront(window.frame.bottomLeft)
                     self.window = window
                 }
            }

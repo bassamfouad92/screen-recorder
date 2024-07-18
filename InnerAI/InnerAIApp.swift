@@ -113,7 +113,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     
     func configureOverlayWindow() {
         window = createWindow(rootView: EmptyView())
-        window?.makeKeyAndOrderFront(nil)
         //hide it initially
         hideWindow()
     }
@@ -123,6 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
     
     func showWindow() {
+        self.window?.makeKeyAndOrderFront(nil)
         self.window?.contentView?.isHidden = false
     }
     
@@ -267,12 +267,12 @@ extension AppDelegate {
         showWindow()
     }
     
-    func diplayCropWindowView() {
+    func diplayCropWindowView(showWith runningApplicationName: String) {
         hidePopOver()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.hidePopOver()
         }
-        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView().environmentObject(self))
+        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView(runningApplicationName: runningApplicationName, onWindowFront: { _ in }).environmentObject(self))
         showWindow()
     }
 }

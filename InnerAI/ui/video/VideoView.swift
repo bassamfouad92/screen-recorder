@@ -46,50 +46,68 @@ struct VideoView: View {
 
     var onStateChanged: (RecordingState) -> Void
     @State private var offset = CGSize.zero
-    
+    @State private var showCountDownView = true
+
     var body: some View {
         ZStack {
+            if showCountDownView {
+                CountdownView()
+            }
+            if recordConfig.videoWindowType == .specific && recordConfig.windowInfo != nil {
+                SpecificWindowCropView(runningApplicationName: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos in
+                    if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
+                        appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: CGSize(width:  bottomLeftPos.x + 20, height: bottomLeftPos.y - 200))
+                    }
+                })
+            }
             if recordConfig.settings.displayCamera {
                 if recordConfig.videoWindowType == .fullScreen {
                     DraggableView(content: {
-                        CameraView(presentationStyle: .partial, viewModel: viewModel)
+                        CameraView(presentationStyle: .partial, viewModel: viewModel).offset(x: 0, y: showCountDownView ? 300 : 0)
                     }, callback: { _ in
                         
                     }, contentSize: CGSize(width: 190, height: 130)).offset(y: -60)
                 }
             }
-        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        }.onAppear {
+            viewDidAppear()
+        }.frame(maxWidth: screenSize.width, maxHeight: screenSize.height, alignment: .bottomLeading)
+            .edgesIgnoringSafeArea(.all)
             .background(.clear)
             .overlay(
-                    HStack {
-                        ControlPanelView(restartRecording: $restartPerformed, isPopupDisplayed: $displayingActionPopup, onClicked: { action in
-                            switch action {
-                            case .stop:
-                                stopRecording()
-                            case .pause:
-                                screenRecordManager?.isPause = true
-                            case .resume:
-                                screenRecordManager?.isPause = false
-                            case .restart:
-                                restartRecording()
-                            case .delete:
-                                deleteRecording()
-                            default:
-                                onStateChanged(.inProgress)
-                                break
+                        HStack {
+                            if !showCountDownView {
+                                ControlPanelView(restartRecording: $restartPerformed, isPopupDisplayed: $displayingActionPopup, onClicked: { action in
+                                    switch action {
+                                    case .stop:
+                                        stopRecording()
+                                    case .pause:
+                                        screenRecordManager?.isPause = true
+                                    case .resume:
+                                        screenRecordManager?.isPause = false
+                                    case .restart:
+                                        restartRecording()
+                                    case .delete:
+                                        deleteRecording()
+                                    default:
+                                        onStateChanged(.inProgress)
+                                        break
+                                    }
+                                }).offset(x: offset.width, y: offset.height)
                             }
-                        }).onAppear {
-                            viewDidAppear()
-                        }.offset(x: offset.width, y: offset.height)
-                        DraggableView(content: {
-                            Image("record_menu")
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                        }, callback: { offset in
-                            self.offset = offset
-                        }, contentSize: CGSize(width: 220, height: 60)).offset(x: -44)
-                    }.offset(x: offset == .zero ? 250 : 0, y: -60)
-                , alignment: .bottomLeading)
+                            if !showCountDownView {
+                                DraggableView(content: {
+                                    Image("record_menu")
+                                        .resizable()
+                                        .frame(width: 24, height: 24)
+                                }, callback: { offset in
+                                    self.offset = offset
+                                }, contentSize: CGSize(width: 220, height: 60)).offset(x: -44)
+                            }
+                        }.offset(x: offset == .zero ? 250 : 0, y: -60)
+                            .transition(.move(edge: .bottom)), // Optional: Add a transition animation
+                alignment: .bottomLeading
+            )
     }
     
     
@@ -111,7 +129,9 @@ struct VideoView: View {
                 let windowID = recordConfig.windowInfo?.windowID
                 selectedWindow = shareableContent.windows.first(where: { $0.windowID == windowID })
                 cameraWindow = shareableContent.windows.first(where: { $0.title == "CameraWindow" })
-                startRecording()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    startRecording()
+                }
             }
         }
     }
@@ -132,7 +152,7 @@ struct VideoView: View {
             DispatchQueue.main.async {
                 if let cameraWindow = shareableContent.windows.first(where: { $0.title == "CameraWindow" }) {
                     selectedWindow = cameraWindow
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         startRecording()
                     }
                 }
@@ -143,23 +163,27 @@ struct VideoView: View {
 // MARK: Lifecycle functions
 extension VideoView {
     private func viewDidAppear() {
-        
         viewModel.selectedCamera = recordConfig.selectedCamera
         viewModel.checkAuthorization()
-        
+        setupRecording()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            showCountDownView = false
+        }
+    }
+    
+    private func setupRecording() {
         if recordConfig.videoWindowType == .specific {
-            if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial)
-            }
             getSpecificWindow()
         } else if recordConfig.videoWindowType == .camera {
             if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full)
+                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero)
                 appDelegate.makeDefaultOverlayWindowsOnTop()
             }
             getCameraOnlyWindows()
         } else {
-            startRecording()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                startRecording()
+            }
         }
     }
     
@@ -182,6 +206,7 @@ extension VideoView {
                     self.stopRecording()
                 }
             }
+            print("Camera Window: \(cameraWindow?.title)")
             try await screenRecordManager?.record(displayID: CGMainDisplayID(), selectedWindow: selectedWindow, cameraWindow: cameraWindow, excludedWindows: excludedWindows)
         } catch {
             print("Error during recording:", error)

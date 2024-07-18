@@ -12,6 +12,7 @@ struct OpenedWindowInfo: Hashable {
     let windowID: CGWindowID
     let title: String
     let image: NSImage
+    let runningApplicationName: String
     var isSelected: Bool = false
     var isHovered: Bool = false
 }
