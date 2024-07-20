@@ -58,23 +58,13 @@ struct SpecificWindowCropView: View {
         let options = CGWindowListOption(arrayLiteral: CGWindowListOption.excludeDesktopElements, CGWindowListOption.optionOnScreenBelowWindow, CGWindowListOption.optionOnScreenAboveWindow)
         let windowListInfo = CGWindowListCopyWindowInfo(options, CGWindowID(0))
         guard let infoList = windowListInfo as NSArray? as? [[String: AnyObject]] else { return }
-        print("SpecificWindowCropView : \(infoList)")
-        minimizeWindow(withName: "YouTube")
         if let window = infoList.first(where: { ($0["kCGWindowName"] as? String) == windowOwnerName}), let pid = window["kCGWindowOwnerPID"] as? Int32, (window["kCGWindowName"] as? String ?? "").isEmpty == false {
             let app = NSRunningApplication(processIdentifier: pid)
             app?.activate(options: .activateIgnoringOtherApps)
         }
     }
     
-    func minimizeWindow(withName windowName: String) {
-        if let window = NSApplication.shared.windows.first(where: { $0.title == windowName }) {
-            window.miniaturize(nil)
-        } else {
-            print("Not found!!!!")
-        }
-    }
-    
-    func bringSafariWindowToFront(windowTitle: String, withAppName appName: String) {
+    func bringWindowToFront(windowTitle: String, withAppName appName: String) {
           let runningApps = NSWorkspace.shared.runningApplications
         
           guard let app = runningApps.first(where: { $0.localizedName == appName }) else {
@@ -124,55 +114,6 @@ struct SpecificWindowCropView: View {
            print("No window found with title containing '\(windowTitle)'.")
     }
     
-    func bringApplicationToFront(byName windowName: String, inAppName appName: String) {
-        guard let appElement = getAXUIElement(forAppName: appName) else {
-                print("Failed to create AXUIElement for \(appName).")
-                return
-            }
-
-            // Get all windows of the application
-            var windowElements: AnyObject?
-            let result = AXUIElementCopyAttributeValue(appElement, kAXChildrenAttribute as CFString, &windowElements)
-            
-            if result == .success, let windows = windowElements as? [AXUIElement] {
-                // Find the window with the specified name
-                if let targetWindow = windows.first(where: { window in
-                    var windowTitle: AnyObject?
-                    let titleResult = AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &windowTitle)
-                    return titleResult == .success && (windowTitle as? String) == windowName
-                }) {
-                    // Bring the window to the front
-                    let frontmostResult = AXUIElementSetAttributeValue(targetWindow, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
-                    if frontmostResult == .success {
-                        print("Successfully brought window '\(windowName)' of \(appName) to the front.")
-                    } else {
-                        print("Failed to bring window '\(windowName)' of \(appName) to the front. Error: \(frontmostResult.rawValue)")
-                    }
-                } else {
-                    print("Window with name '\(windowName)' not found in \(appName).")
-                }
-            } else {
-                print("Failed to retrieve windows for \(appName). Error: \(result.rawValue)")
-            }
-    }
-    
-    func getAXUIElement(forAppName appName: String) -> AXUIElement? {
-        let runningApps = NSWorkspace.shared.runningApplications
-        guard let app = runningApps.first(where: { $0.localizedName == appName }) else {
-            print("Application '\(appName)' not found.")
-            return nil
-        }
-        let pid = app.processIdentifier
-        return AXUIElementCreateApplication(pid)
-    }
-    
-    func printRunningApplications() {
-        let runningApps = NSWorkspace.shared.runningApplications
-        for app in runningApps {
-            print("Application: \(app.localizedName ?? "Unknown") PID: \(app.processIdentifier)")
-        }
-    }
-    
     private func getOpenedWindowsList() {
         SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: true, completionHandler: { shareableContent, error in
             if let error = error {
@@ -187,10 +128,7 @@ struct SpecificWindowCropView: View {
             
             DispatchQueue.main.async {
                 if let window = shareableContent.windows.first(where: { $0.title ?? "" == title }) {
-                    //switchToApp(named: runningApplicationName)
-                    bringSafariWindowToFront(windowTitle: title, withAppName: window.owningApplication?.applicationName ?? title)
-                    print("Window size: \(window.frame)")
-                    print("Window top left: \(window.frame.origin.x), \(window.frame.origin.y)")
+                    bringWindowToFront(windowTitle: title, withAppName: window.owningApplication?.applicationName ?? title)
                     onWindowFront(window.frame.bottomLeft)
                     self.window = window
                 }
