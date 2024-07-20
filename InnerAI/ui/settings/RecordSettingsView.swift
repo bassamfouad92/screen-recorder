@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import ScreenCaptureKit
+import ApplicationServices
 
 enum SettingsViewType {
     case video, camera, microphone, quit, none
@@ -111,6 +112,7 @@ struct RecordSettingsView: View {
                }.onAppear {
                    viewModel.configureCameraAndMic()
                    viewModel.checkForUpdates()
+                   
                    if let videoOption = viewModel.videoOptions.first {
                        videoSettingOption = videoOption.withRightIcon(.settings).withSelected(false)
                        viewModel.setSelectedVideo(with: videoOption as! VideoOption)

@@ -38,12 +38,12 @@ class RecordFileManager {
             }
     }
     
-    func fetchFileInfo(fromPath path: String) -> (fileSize: Int, fileType: String, fileName: String, fileURL: URL)? {
+    func fetchFileInfo(fromPath fileURL: URL) -> (fileSize: Int, fileType: String, fileName: String, fileURL: URL)? {
             let fileManager = FileManager.default
-            let fileURL = URL(fileURLWithPath: path)
+            //let fileURL = URL(fileURLWithPath: path)
             
             do {
-                let attributes = try fileManager.attributesOfItem(atPath: path)
+                let attributes = try fileManager.attributesOfItem(atPath: fileURL.relativePath)
                 let fileSize = attributes[.size] as? Int ?? 0
                 let fileType = fileURL.pathExtension
                 let fileName = fileURL.lastPathComponent

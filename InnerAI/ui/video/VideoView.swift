@@ -46,15 +46,12 @@ struct VideoView: View {
 
     var onStateChanged: (RecordingState) -> Void
     @State private var offset = CGSize.zero
-    @State private var showCountDownView = true
+    @State private var shouldStartControlPannel = true
 
     var body: some View {
         ZStack {
-            if showCountDownView {
-                CountdownView()
-            }
             if recordConfig.videoWindowType == .specific && recordConfig.windowInfo != nil {
-                SpecificWindowCropView(runningApplicationName: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos in
+                SpecificWindowCropView(title: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos in
                     if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
                         appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: CGSize(width:  bottomLeftPos.x + 20, height: bottomLeftPos.y - 200))
                     }
@@ -63,7 +60,7 @@ struct VideoView: View {
             if recordConfig.settings.displayCamera {
                 if recordConfig.videoWindowType == .fullScreen {
                     DraggableView(content: {
-                        CameraView(presentationStyle: .partial, viewModel: viewModel).offset(x: 0, y: showCountDownView ? 300 : 0)
+                        CameraView(presentationStyle: .partial, viewModel: viewModel)
                     }, callback: { _ in
                         
                     }, contentSize: CGSize(width: 190, height: 130)).offset(y: -60)
@@ -76,7 +73,7 @@ struct VideoView: View {
             .background(.clear)
             .overlay(
                         HStack {
-                            if !showCountDownView {
+                            if !shouldStartControlPannel {
                                 ControlPanelView(restartRecording: $restartPerformed, isPopupDisplayed: $displayingActionPopup, onClicked: { action in
                                     switch action {
                                     case .stop:
@@ -95,7 +92,7 @@ struct VideoView: View {
                                     }
                                 }).offset(x: offset.width, y: offset.height)
                             }
-                            if !showCountDownView {
+                            if !shouldStartControlPannel {
                                 DraggableView(content: {
                                     Image("record_menu")
                                         .resizable()
@@ -167,7 +164,7 @@ extension VideoView {
         viewModel.checkAuthorization()
         setupRecording()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            showCountDownView = false
+            shouldStartControlPannel = false
         }
     }
     
@@ -291,16 +288,14 @@ extension VideoView {
     
     private func stopRecording() {
         
-        guard let filePath = screenRecordManager?.filePath else {
+        guard let fileURL = screenRecordManager?.fileURL, let fileInfo =  RecordFileManager.shared.fetchFileInfo(fromPath: fileURL) else {
             stopRecordingSession()
             appDelegate.hideWindow()
             return
         }
         
-        if let fileInfo = RecordFileManager.shared.fetchFileInfo(fromPath: filePath) {
-            onStateChanged(.stopped(FileInfo(url: fileInfo.fileURL, name: fileInfo.fileName, size: fileInfo.fileSize, type: "video/\(fileInfo.fileType)")))
-        }
-        
+        onStateChanged(.stopped(FileInfo(url: fileInfo.fileURL, name: fileInfo.fileName, size: fileInfo.fileSize, type: "video/\(fileInfo.fileType)")))
+
         stopRecordingSession()
         viewDidDisappear()
         appDelegate.hideWindow()

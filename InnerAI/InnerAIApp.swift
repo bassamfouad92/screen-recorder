@@ -50,6 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     @MainActor func applicationDidFinishLaunching(_ notification: Notification) {
+        AccessibilityHelper.askForAccessibilityIfNeeded()
         configureRayGun()
         configureRollBar()
         configureOverlayWindow()
@@ -268,12 +269,9 @@ extension AppDelegate {
     }
     
     func diplayCropWindowView(showWith runningApplicationName: String) {
-        hidePopOver()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            self.hidePopOver()
-        }
-        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView(runningApplicationName: runningApplicationName, onWindowFront: { _ in }).environmentObject(self))
+        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView(title: runningApplicationName, onWindowFront: { _ in }).environmentObject(self))
         showWindow()
+        showPopover(duration: 1.5)
     }
 }
 
