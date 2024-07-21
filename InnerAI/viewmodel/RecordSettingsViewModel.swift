@@ -17,7 +17,7 @@ final class RecordSettingsViewModel: ObservableObject {
     var videoOptions: [any SelectableOption] = [
         VideoOption(rightIcon: .check, videoWindowType: .fullScreen, isSelected: true),
         //temp removal
-        //VideoOption(rightIcon: .check, videoWindowType: .specific),
+        VideoOption(rightIcon: .check, videoWindowType: .specific),
         VideoOption(rightIcon: .check, videoWindowType: .camera)
     ]
     

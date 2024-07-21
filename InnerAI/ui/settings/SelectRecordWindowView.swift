@@ -140,13 +140,13 @@ struct SelectRecordWindowView: View {
             if let windowID = windowInfo[kCGWindowNumber as String] as? CGWindowID, let title = windowInfo[kCGWindowOwnerName as String] as? String,
                let windowImage = CGWindowListCreateImage(.null, .optionIncludingWindow, windowID, .boundsIgnoreFraming) {
                 let image = NSImage(cgImage: windowImage, size: NSSize(width: windowImage.width, height: windowImage.height))
-                self.openedWindowList.append(OpenedWindowInfo(windowID: windowID, title: title, image: image))
+                self.openedWindowList.append(OpenedWindowInfo(windowID: windowID, title: title, image: image, runningApplicationName: ""))
             }
         }
     }
     
     private func getOpenedWindowsList() {
-        SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: true, completionHandler: { shareableContent, error in
+        SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: false, completionHandler: { shareableContent, error in
             if let error = error {
                 print("Error retrieving windows: \(error.localizedDescription)")
                 return
@@ -169,7 +169,7 @@ struct SelectRecordWindowView: View {
                         return
                     }
                     let image = NSImage(cgImage: windowImage, size: NSSize(width: windowImage.width, height: windowImage.height))
-                    openedWindowList.append(OpenedWindowInfo(windowID: window.windowID, title: title, image: image))
+                    openedWindowList.append(OpenedWindowInfo(windowID: window.windowID, title: title, image: image, runningApplicationName: title))
                 }
             }
         })

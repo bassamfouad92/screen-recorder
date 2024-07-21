@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import ScreenCaptureKit
+import ApplicationServices
 
 enum SettingsViewType {
     case video, camera, microphone, quit, none
@@ -111,6 +112,7 @@ struct RecordSettingsView: View {
                }.onAppear {
                    viewModel.configureCameraAndMic()
                    viewModel.checkForUpdates()
+                   
                    if let videoOption = viewModel.videoOptions.first {
                        videoSettingOption = videoOption.withRightIcon(.settings).withSelected(false)
                        viewModel.setSelectedVideo(with: videoOption as! VideoOption)
@@ -350,6 +352,7 @@ extension RecordSettingsView {
            videoSettingOption.title = selectedWindow.title
            viewModel.setSelectedVideo(with: option)
            viewModel.configureRecordConfig(videoWindowType: .specific, windowInfo: selectedWindow)
+           routeToCropView()
         })
     }
     
@@ -363,6 +366,8 @@ extension RecordSettingsView {
                 showRecordSettings = true
                 routeToUploadView(fileInfo: fileInfo as! FileInfo)
             default:
+                // reset to default state i.e full screen
+                viewModel.recordConfig = RecordConfiguration(videoWindowType: .fullScreen, windowInfo: nil)
                 showRecordSettings = true
             }
         })
@@ -373,7 +378,7 @@ extension RecordSettingsView {
     }
     
     func routeToCropView() {
-        appDelegate.diplayCropWindowView()
+        appDelegate.diplayCropWindowView(showWith: viewModel.recordConfig.windowInfo?.runningApplicationName ?? "")
     }
 }
 

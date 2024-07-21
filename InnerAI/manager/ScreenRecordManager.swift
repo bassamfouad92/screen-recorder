@@ -57,6 +57,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
     var sampleBufferBeforeTime: CMTime = CMTime.zero
     var sampleBufferAfterTime: CMTime = CMTime.zero
     var adjustedBufferTime: CMTime = .zero
+    var fileURL: URL?
 
     let excludedWindows = ["", "com.apple.dock", "com.apple.controlcenter", "com.apple.notificationcenterui", "com.apple.systemuiserver", "com.apple.WindowManager", "dev.mnpn.Azayaka", "com.gaosun.eul", "com.pointum.hazeover", "net.matthewpalmer.Vanilla", "com.dwarvesv.minimalbar", "com.bjango.istatmenus.status"]
     
@@ -154,7 +155,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         dateFormatter.dateFormat = "y-MM-dd HH.mm.ss"
         let fileName = "inner_ai_recording_new"
         let fileNameWithDates = fileName.replacingOccurrences(of: "%t", with: dateFormatter.string(from: Date())).prefix(Int(NAME_MAX) - 5)
-        return String(fileNameWithDates)
+        return String(fileName)
     }
     
     func getRecordingLength() -> String {
@@ -182,6 +183,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
 }
 
 extension ScreenRecordManager {
+
     private func initVideo(conf: SCStreamConfiguration, displayScaleFactor: Int, displaySize: CGSize) {
         
         startTime = nil
@@ -194,7 +196,25 @@ extension ScreenRecordManager {
         }
 
         filePath = "\(getFilePath())\(Date()).\(fileEnding)"
-        videoWriter = try? AVAssetWriter(url: URL(fileURLWithPath: filePath), fileType: fileType!)
+        // Ensure directory exists
+        FileUtils.createDirectoryInDocuments(withName: "inneraivideos")
+
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let newDirectoryURL = documentsURL.appendingPathComponent("inneraivideos")
+        
+        fileURL = newDirectoryURL.appendingPathComponent(filePath)
+
+        guard fileURL?.startAccessingSecurityScopedResource() ?? false else {
+            print("Failed to access the file.")
+             return
+        }
+        
+        defer {
+            fileURL?.stopAccessingSecurityScopedResource()
+        }
+        
+        videoWriter = try? AVAssetWriter(url: fileURL!, fileType: fileType!)
         // AVAssetWriterInput supports maximum resolution of 4096x2304 for H.264
         // Downsize to fit a larger display back into in 4K
         let videoSize = downsizedVideoSize(source: displaySize, scaleFactor: displayScaleFactor, mode: mode)
