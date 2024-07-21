@@ -50,7 +50,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     @MainActor func applicationDidFinishLaunching(_ notification: Notification) {
-        AccessibilityHelper.askForAccessibilityIfNeeded()
         configureRayGun()
         configureRollBar()
         configureOverlayWindow()
