@@ -203,7 +203,6 @@ extension VideoView {
                     self.stopRecording()
                 }
             }
-            print("Camera Window: \(cameraWindow?.title)")
             try await screenRecordManager?.record(displayID: CGMainDisplayID(), selectedWindow: selectedWindow, cameraWindow: cameraWindow, excludedWindows: excludedWindows)
         } catch {
             print("Error during recording:", error)

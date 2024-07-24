@@ -36,17 +36,21 @@ struct SpecificWindowCropView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            Color.black.opacity(0.6)
-                .mask(
-                    RectangleMaskShape(
-                        inset: 0,
-                        width: window?.frame.width ?? 500,
-                        height: window?.frame.height ?? 500,
-                        positionX: window?.frame.origin.x ?? 0,
-                        positionY: window?.frame.origin.y ?? 0
-                    )
-                    .fill(style: FillStyle(eoFill: true))
-                )
+                if let window = window {
+                    Color.black.opacity(0.6)
+                        .mask(
+                            RectangleMaskShape(
+                                inset: 0,
+                                width: window.frame.width,
+                                height: window.frame.height,
+                                positionX: window.frame.origin.x,
+                                positionY: window.frame.origin.y
+                            )
+                            .fill(style: FillStyle(eoFill: true))
+                        )
+                } else {
+                    Color.clear
+                }
         }
         .allowsHitTesting(false)
         .onAppear {

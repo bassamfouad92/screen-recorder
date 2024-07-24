@@ -364,13 +364,24 @@ extension RecordSettingsView {
                 showRecordSettings = false
             case .stopped(let fileInfo):
                 showRecordSettings = true
+                closeAllRecoredWindows()
                 routeToUploadView(fileInfo: fileInfo as! FileInfo)
             default:
                 // reset to default state i.e full screen
                 viewModel.recordConfig = RecordConfiguration(videoWindowType: .fullScreen, windowInfo: nil)
+                closeAllRecoredWindows()
                 showRecordSettings = true
             }
         })
+    }
+    
+    func closeAllRecoredWindows() {
+        NSApp.windows.filter { $0.title == "CameraWindow" }.first?.close()
+        NSApp.windows.forEach {
+            if $0.title == "InnerAIRecordWindow" {
+                $0.close()
+            }
+        }
     }
     
     func routeToUploadView(fileInfo: FileInfo) {
