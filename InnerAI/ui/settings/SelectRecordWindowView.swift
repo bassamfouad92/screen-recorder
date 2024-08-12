@@ -11,7 +11,7 @@ import PopupView
 
 struct SelectRecordWindowView: View {
     
-    let excluded = ["Item", "statusBarItem", "Menubar", "Dock", "WiFi", "BentoBox", "Clock", "Wallpaper-", "Desktop", "Battery", "StatusIndicator", "AudioVideoModule", "WindowServer", "InnerAIRecordWindow", "CameraWindow", "InnerAI"]
+    let excluded = ["Item", "statusBarItem", "Menubar", "Dock", "WiFi", "BentoBox", "Clock", "Wallpaper-", "Desktop", "Battery", "StatusIndicator", "AudioVideoModule", "WindowServer", "InnerAIRecordWindow", "CameraWindow", "InnerAI", "Notification Center"]
     
     @State private var openedWindowList: [OpenedWindowInfo] = []
     @State var showingPopup = false
