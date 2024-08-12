@@ -347,13 +347,24 @@ extension RecordSettingsView {
             return
         }
         
-        appDelegate.diplaySelectRecordWindowView(completion: { selectedWindow in
-           videoSettingOption = option.withRightIcon(.settings).withSelected(false)
-           videoSettingOption.title = selectedWindow.title
-           viewModel.setSelectedVideo(with: option)
-           viewModel.configureRecordConfig(videoWindowType: .specific, windowInfo: selectedWindow)
-           routeToCropView()
-        })
+        AccessibilityHelper.askForAccessibilityIfNeeded(appDelegate: appDelegate) { accessibilityEnabled in
+            DispatchQueue.main.async {
+                if accessibilityEnabled {
+                    self.appDelegate.diplaySelectRecordWindowView(completion: { selectedWindow in
+                        self.videoSettingOption = option.withRightIcon(.settings).withSelected(false)
+                        self.videoSettingOption.title = selectedWindow.title
+                        self.viewModel.setSelectedVideo(with: option)
+                        self.viewModel.configureRecordConfig(videoWindowType: .specific, windowInfo: selectedWindow)
+                        self.routeToCropView()
+                    })
+                } else {
+                    // The user either cancelled or needs to grant permission in System Preferences
+                    // We don't proceed with window selection
+                    print("Accessibility permission not granted")
+                    self.appDelegate.hidePopOver()
+                }
+            }
+        }
     }
     
     func routeToVideoRecordView() {
