@@ -13,7 +13,7 @@ import AppKit
 final class RecordSettingsViewModel: ObservableObject {
     
     let deviceManager: AVCaptureDeviceManager
-    
+
     var videoOptions: [any SelectableOption] = [
         VideoOption(rightIcon: .check, videoWindowType: .fullScreen, isSelected: true),
         //temp removal
@@ -29,6 +29,8 @@ final class RecordSettingsViewModel: ObservableObject {
         VoiceOption(title: "No Microphone", rightIcon: .check).onMicrophone(false),
     ]
     
+    //MARK:- Observers
+    @Published private var screenObserver = ScreenObserver()
     @Published var selectedVideoOption: VideoOption {
         didSet {
             for (index, var option) in videoOptions.enumerated() {
@@ -55,7 +57,9 @@ final class RecordSettingsViewModel: ObservableObject {
     var micDeviceId: UInt32? {
         didSet {
             guard let id = micDeviceId else { return }
-            recordConfig = recordConfig.withAudioDeviceId(id)
+            let audioDeviceId: AudioDeviceID = id
+            let transportType = deviceManager.getAudioDeviceTransportType(deviceID: audioDeviceId)
+            recordConfig = recordConfig.withAudioDeviceId(id, transportType)
         }
     }
     
@@ -80,8 +84,16 @@ final class RecordSettingsViewModel: ObservableObject {
             recordConfig = recordConfig.withAudio(state)
         }
     }
+    
+    var isExternelScreenConnected: Bool? {
+        return screenObserver.screenCount > 1
+    }
 
     private var cancellables = Set<AnyCancellable>()
+    
+    func subscribeToScreenObserver() {
+        screenObserver.getScreensList()
+    }
 
     func checkForUpdates() {
         guard let url = URL(string: "https://cdn-client.innerplay.io/v2-screenrec/versions.json") else { return }
@@ -156,11 +168,21 @@ final class RecordSettingsViewModel: ObservableObject {
         }
     }
     
-    func configureRecordConfig(videoWindowType: VideoWindowType, windowInfo: OpenedWindowInfo? = nil) {
+    func configureRecordConfig(videoWindowType: VideoWindowType, windowInfo: OpenedWindowInfo? = nil, screeninfo: ScreenInfo? = nil) {
         recordConfig = RecordConfiguration(videoWindowType: videoWindowType, windowInfo: windowInfo, selectedCamera: defaultCamera)
+        if let screen = screeninfo {
+            recordConfig = recordConfig.withScreenInfo(screen)
+        }
+        if isExternelScreenConnected ?? false {
+            recordConfig = recordConfig.withExternalDisplay(true)
+        }
     }
     
-    private func appendAvailableCamerasAndMicrophone() {
+    func appendAvailableCamerasAndMicrophone() {
+        //remove all before setting new devices
+        cameraOptions = cameraOptions.filter { $0.title == "No Camera" }
+        voiceOptions = voiceOptions.filter { $0.title == "No Microphone" }
+        
         cameraOptions.append(contentsOf: (deviceManager.getListOfCamerasAsString().map {
             return CameraOption(title: $0, rightIcon: .check)
         }))

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct DraggableView<Content: View>: View {
     
-    let screenSize = NSScreen.main?.frame.size ?? .zero
+    var screenSize: CGRect
     var content: Content
 
     @State var offset = CGSize.zero
@@ -18,11 +18,12 @@ struct DraggableView<Content: View>: View {
     var contentSize: CGSize?
     var specificWindowSize: CGSize?
 
-    init(@ViewBuilder content: () -> Content, callback: @escaping (_ offset: CGSize) -> Void?, contentSize: CGSize = .zero, specificWindowSize: CGSize? = nil) {
+    init(@ViewBuilder content: () -> Content, callback: @escaping (_ offset: CGSize) -> Void?, contentSize: CGSize = .zero, specificWindowSize: CGSize? = nil, screenSize: CGRect) {
         self.content = content()
         self.onDragging = callback
         self.contentSize = contentSize
         self.specificWindowSize = specificWindowSize
+        self.screenSize = screenSize
     }
     
     var body: some View {

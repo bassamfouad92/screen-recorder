@@ -23,9 +23,9 @@ enum Environment: String {
     var uploadInitUrl: String {
         switch self {
         case .staging:
-            return "https://processing-staging.innerplay.io:5000/cloud_upload_init"
+            return "https://processing-staging.innerplay.io/cloud_upload_init"
         case .production:
-            return "https://processing.innerplay.io:5000/cloud_upload_init"
+            return "https://processing.innerplay.io/cloud_upload_init"
         }
     }
     

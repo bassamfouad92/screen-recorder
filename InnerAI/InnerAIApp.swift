@@ -239,36 +239,115 @@ extension AppDelegate {
 
 // MARK: Overlay views
 extension AppDelegate {
+    
+    func diplaySelectScreenPopupView(completion: @escaping (_ selectedScreen: ScreenInfo) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.hidePopOver()
+        }
+        let screenFrame = CGDisplayBounds(CGMainDisplayID())
+        self.window?.contentView = NSHostingView(rootView: SelectScreenPopupView(didScreenSelection: {
+            self.showPopover()
+            completion($0)
+        }, screenSize: screenFrame).environmentObject(self))
+        
+        // Move window to external display
+        WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+            WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
+        ], toDisplay: CGMainDisplayID())
+        
+        showWindow()
+    }
+    
     func diplaySelectRecordWindowView(completion: @escaping (_ selectedWindow: OpenedWindowInfo) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.hidePopOver()
         }
+        let screenFrame = CGDisplayBounds(CGMainDisplayID())
         self.window?.contentView = NSHostingView(rootView: SelectRecordWindowView(onSelectedWindow: {
             self.showPopover()
             completion($0)
-        }).environmentObject(self))
+        }, screenSize: screenFrame).environmentObject(self))
+        
+        // Move window to external display
+        WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+            WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
+        ], toDisplay: CGMainDisplayID())
+        
         showWindow()
     }
     
     func diplayVideoWindowView(withRecord config: RecordConfiguration, callback: @escaping (RecordingState) -> Void) {
         hidePopOver()
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.hidePopOver()
         }
-        self.window?.contentView = NSHostingView(rootView: VideoView(recordConfig: config, onStateChanged: { state  in
-            callback(state)
-        }).environmentObject(self))
+        
+        let rootView: VideoView
+        var windowFrame: CGRect = .zero
+        
+        if config.isExternalDisplayConnected {
+            if let screenWidth = config.screenInfo?.displaySize.width, let screenHeight = config.screenInfo?.displaySize.height {
+                windowFrame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
+            }
+            
+            if let windowInfo = config.windowInfo,
+               let windowOnFront = WindowUtil.getWindow(windowTitle: windowInfo.title, withAppName: windowInfo.runningApplicationName),
+               let displayId = WindowUtil.getDisplayId(from: windowOnFront), displayId != 1 {
+                
+                windowFrame = CGDisplayBounds(displayId)
+                
+                // Move window to external display
+                WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+                    WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
+                ], toDisplay: displayId)
+                
+                self.window?.setFrame(windowFrame, display: true)
+                self.window?.toggleFullScreen(nil)
+            } else {
+                guard let screenSize = NSScreen.main?.frame else { return }
+                windowFrame = screenSize
+            }
+        } else {
+            guard let screenSize = NSScreen.main?.frame else { return }
+            windowFrame = screenSize
+        }
+        
+        rootView = VideoView(screenSize: windowFrame, recordConfig: config, onStateChanged: callback)
+        self.window?.contentView = NSHostingView(rootView: rootView.environmentObject(self))
         showWindow()
     }
     
     func displayCameraPreview() {
         hidePopOver()
-        self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(viewModel: ContentViewModel()).environmentObject(self))
+        let screenSize = NSScreen.main?.frame
+        self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(viewModel: ContentViewModel(), screenSize: screenSize!).environmentObject(self))
         showWindow()
     }
     
-    func diplayCropWindowView(showWith runningApplicationName: String) {
-        self.window?.contentView = NSHostingView(rootView: SpecificWindowCropView(title: runningApplicationName, onWindowFront: { _ in }).environmentObject(self))
+    func diplayCropWindowView(showWith windowInfo: OpenedWindowInfo, withRecord config: RecordConfiguration, isExternalScreen: Bool = false, callback: @escaping (_ displayId: CGDirectDisplayID) -> Void) {
+        
+        let rootView = SpecificWindowCropView(title: windowInfo.runningApplicationName, onWindowFront: { _, displayId in
+            callback(displayId)
+        }).environmentObject(self)
+        
+        self.window?.contentView = NSHostingView(rootView: rootView)
+        
+        if isExternalScreen {
+            guard let windowOnFront = WindowUtil.getWindow(windowTitle: windowInfo.title, withAppName: windowInfo.runningApplicationName),
+                  let displayId = WindowUtil.getDisplayId(from: windowOnFront) else { return }
+            
+            // Move window to external display
+            WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+                WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
+            ], toDisplay: displayId)
+            
+            let displayBounds = CGDisplayBounds(displayId)
+            // Set the window frame to match the external display bounds
+            self.window?.setFrame(displayBounds, display: true)
+            self.window?.toggleFullScreen(nil)
+        }
+        
         showWindow()
         showPopover(duration: 1.5)
     }

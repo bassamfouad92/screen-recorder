@@ -26,7 +26,7 @@ struct RecordSettingsView: View {
     @State private var showAlert = false
     @State private var showErrorMessage = ""
     @State private var isRecordButtonHovered = false
-
+    @State private var deviceObserver = DeviceObserver()
     @EnvironmentObject var appDelegate: AppDelegate
     
     var isCameraAuthorized: Bool {
@@ -112,6 +112,8 @@ struct RecordSettingsView: View {
                }.onAppear {
                    viewModel.configureCameraAndMic()
                    viewModel.checkForUpdates()
+                   viewModel.subscribeToScreenObserver()
+                   subscribeToDeviceListener()
                    
                    if let videoOption = viewModel.videoOptions.first {
                        videoSettingOption = videoOption.withRightIcon(.settings).withSelected(false)
@@ -329,9 +331,16 @@ struct RecordSettingsView: View {
             return
         }
         
-        if viewModel.recordConfig.videoWindowType == .specific {
+        switch viewModel.recordConfig.videoWindowType {
+        case .fullScreen:
+            if viewModel.isExternelScreenConnected ?? false {
+                routeToScreenSelection()
+                return
+            }
+            routeToVideoRecordView()
+        case .specific:
             validateIfSpecificWindowAvailable()
-        } else {
+        default:
             routeToVideoRecordView()
         }
     }
@@ -369,6 +378,7 @@ extension RecordSettingsView {
     
     func routeToVideoRecordView() {
         hideOptionsPopOver()
+        closeAllRecoredWindows()
         appDelegate.diplayVideoWindowView(withRecord: viewModel.recordConfig, callback: { state in
             switch state {
             case .inProgress:
@@ -386,6 +396,31 @@ extension RecordSettingsView {
         })
     }
     
+    func routeToScreenSelection() {
+        guard CGPreflightScreenCaptureAccess() else {
+            showAlert = true
+            return
+        }
+        
+        AccessibilityHelper.askForAccessibilityIfNeeded(appDelegate: appDelegate) { accessibilityEnabled in
+            DispatchQueue.main.async {
+                if accessibilityEnabled {
+                    self.appDelegate.diplaySelectScreenPopupView(completion: { selectedScreen in
+                        self.viewModel.configureRecordConfig(videoWindowType: .fullScreen, screeninfo: selectedScreen)
+                        print("SELECTED SCREEN: \(selectedScreen.displayID), size:  \(selectedScreen.displaySize.width), \(selectedScreen.displaySize.height)")
+                        self.routeToVideoRecordView()
+                    })
+                } else {
+                    // The user either cancelled or needs to grant permission in System Preferences
+                    // We don't proceed with window selection
+                    print("Accessibility permission not granted")
+                    self.appDelegate.hidePopOver()
+                }
+            }
+        }
+    }
+    
+    ///After done with recording stopped or deleted close all windows
     func closeAllRecoredWindows() {
         NSApp.windows.filter { $0.title == "CameraWindow" }.first?.close()
         NSApp.windows.forEach {
@@ -400,7 +435,10 @@ extension RecordSettingsView {
     }
     
     func routeToCropView() {
-        appDelegate.diplayCropWindowView(showWith: viewModel.recordConfig.windowInfo?.runningApplicationName ?? "")
+        guard let info = viewModel.recordConfig.windowInfo else { return }
+        appDelegate.diplayCropWindowView(showWith: info, withRecord: viewModel.recordConfig, isExternalScreen: viewModel.recordConfig.isExternalDisplayConnected, callback: { displayId in
+            
+        })
     }
 }
 
@@ -453,5 +491,23 @@ extension RecordSettingsView {
             return false
         }
         return true
+    }
+}
+
+// MARK: Device observers
+extension RecordSettingsView {
+    private func subscribeToDeviceListener() {
+        deviceObserver.onDeviceStatusChanged = { 
+            hideOptionsPopOver()
+            viewModel.appendAvailableCamerasAndMicrophone()
+            viewModel.configureCameraAndMic()
+            
+            if let camera = viewModel.cameraOptions.first(where: { $0.isSelected }) {
+                cameraSettingOption = camera.withRightIcon(.settings).withSelected(false)
+            }
+            if let mic = viewModel.voiceOptions.first(where: { $0.isSelected }) {
+                micSettingOption = mic.withRightIcon(.settings).withSelected(false)
+            }
+        }
     }
 }

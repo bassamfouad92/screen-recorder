@@ -170,7 +170,10 @@ struct RecordConfiguration {
     var settings: RecordSettings = RecordSettings(displayCamera: true, enableAudio: true)
     let windowInfo: OpenedWindowInfo?
     var audioDeviceId: UInt32?
+    var audioDeviceTransportType: AudioDeviceTransportType?
     var selectedCamera: AVCaptureDevice?
+    var screenInfo: ScreenInfo?
+    var isExternalDisplayConnected: Bool = false
     
     func withCamera(_ state: Bool) -> Self {
         var copy = self
@@ -190,11 +193,23 @@ struct RecordConfiguration {
         return copy
     }
     
-    func withAudioDeviceId(_ id: UInt32) -> Self {
+    func withAudioDeviceId(_ id: UInt32, _ type: AudioDeviceTransportType) -> Self {
         var copy = self
         copy.audioDeviceId = id
+        copy.audioDeviceTransportType = type
         return copy
     }
-
+    
+    func withScreenInfo(_ info: ScreenInfo) -> Self {
+        var copy = self
+        copy.screenInfo = info
+        return copy
+    }
+    
+    func withExternalDisplay(_ isConnected: Bool) -> Self {
+        var copy = self
+        copy.isExternalDisplayConnected = isConnected
+        return copy
+    }
     
 }

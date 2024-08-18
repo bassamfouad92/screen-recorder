@@ -29,7 +29,7 @@ enum RecordingState: Equatable {
 
 struct VideoView: View {
     
-    let screenSize = NSScreen.main?.frame.size ?? .zero
+    let screenSize: NSRect
     let recordConfig: RecordConfiguration
     
     @State private var selectedWindow: SCWindow?
@@ -51,9 +51,9 @@ struct VideoView: View {
     var body: some View {
         ZStack {
             if recordConfig.videoWindowType == .specific && recordConfig.windowInfo != nil {
-                SpecificWindowCropView(title: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos in
+                SpecificWindowCropView(title: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos,_ in
                     if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                        appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: CGSize(width:  bottomLeftPos.x + 20, height: bottomLeftPos.y - 200))
+                        appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: CGSize(width:  bottomLeftPos.x + 20, height: bottomLeftPos.y - 200), screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
                     }
                 })
             }
@@ -63,12 +63,12 @@ struct VideoView: View {
                         CameraView(presentationStyle: .partial, viewModel: viewModel)
                     }, callback: { _ in
                         
-                    }, contentSize: CGSize(width: 190, height: 130)).offset(y: -60)
+                    }, contentSize: CGSize(width: 190, height: 130), screenSize: screenSize).offset(y: -60)
                 }
             }
         }.onAppear {
             viewDidAppear()
-        }.frame(maxWidth: screenSize.width, maxHeight: screenSize.height, alignment: .bottomLeading)
+        }.frame(width: screenSize.width, height: screenSize.height, alignment: .bottomLeading)
             .edgesIgnoringSafeArea(.all)
             .background(.clear)
             .overlay(
@@ -99,14 +99,13 @@ struct VideoView: View {
                                         .frame(width: 24, height: 24)
                                 }, callback: { offset in
                                     self.offset = offset
-                                }, contentSize: CGSize(width: 220, height: 60)).offset(x: -44)
+                                }, contentSize: CGSize(width: 220, height: 60), screenSize: screenSize).offset(x: -44)
                             }
                         }.offset(x: offset == .zero ? 250 : 0, y: -60)
                             .transition(.move(edge: .bottom)), // Optional: Add a transition animation
                 alignment: .bottomLeading
             )
     }
-    
     
     // MARK: Screen capture kit handler
     private func getSpecificWindow() {
@@ -160,6 +159,7 @@ struct VideoView: View {
 // MARK: Lifecycle functions
 extension VideoView {
     private func viewDidAppear() {
+        moveWindowToExternalIfNeeded()
         viewModel.selectedCamera = recordConfig.selectedCamera
         viewModel.checkAuthorization()
         setupRecording()
@@ -173,7 +173,7 @@ extension VideoView {
             getSpecificWindow()
         } else if recordConfig.videoWindowType == .camera {
             if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero)
+                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero, screenSize: screenSize)
                 appDelegate.makeDefaultOverlayWindowsOnTop()
             }
             getCameraOnlyWindows()
@@ -181,6 +181,16 @@ extension VideoView {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 startRecording()
             }
+        }
+    }
+    
+    private func moveWindowToExternalIfNeeded() {
+        if recordConfig.isExternalDisplayConnected && recordConfig.videoWindowType == .fullScreen {
+            /// If external screen connected move controls window i.e InnerAIRecordWindow to external display
+            let windowsToMove = [
+                WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI"),
+            ]
+            WindowUtil.moveWindowsToExternalDisplay(windowsInfo: windowsToMove, toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
         }
     }
     
@@ -203,7 +213,7 @@ extension VideoView {
                     self.stopRecording()
                 }
             }
-            try await screenRecordManager?.record(displayID: CGMainDisplayID(), selectedWindow: selectedWindow, cameraWindow: cameraWindow, excludedWindows: excludedWindows)
+            try await screenRecordManager?.record(displayID: recordConfig.screenInfo?.displayID ?? CGMainDisplayID(), selectedWindow: selectedWindow, cameraWindow: cameraWindow, excludedWindows: excludedWindows)
         } catch {
             print("Error during recording:", error)
         }

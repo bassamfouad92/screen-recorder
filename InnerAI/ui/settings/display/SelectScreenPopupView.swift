@@ -1,25 +1,28 @@
 //
-//  SelectRecordWindowView.swift
+//  SelectDisplayPopupView.swift
 //  InnerAI
 //
-//  Created by Bassam Fouad on 28/04/2024.
+//  Created by Bassam Fouad on 14/08/2024.
 //
 
 import SwiftUI
 import ScreenCaptureKit
 import PopupView
+import Cocoa
+import CoreGraphics
+import IOKit.graphics
 
-struct SelectRecordWindowView: View {
+struct SelectScreenPopupView: View {
     
     let excluded = ["Item", "statusBarItem", "Menubar", "Dock", "WiFi", "BentoBox", "Clock", "Wallpaper-", "Desktop", "Battery", "StatusIndicator", "AudioVideoModule", "WindowServer", "InnerAIRecordWindow", "CameraWindow", "InnerAI", "Notification Center"]
     
-    @State private var openedWindowList: [OpenedWindowInfo] = []
+    @State private var screenList: [ScreenInfo] = []
     @State var showingPopup = false
     @State private var isHover = false
     @State private var hoveredItemId: CGWindowID = 0
     
     @EnvironmentObject var appDelegate: AppDelegate
-    var onSelectedWindow: (_ windowInfo: OpenedWindowInfo) -> Void
+    var didScreenSelection: (_ windowInfo: ScreenInfo) -> Void
     var screenSize: CGRect
     
     var body: some View {
@@ -35,7 +38,7 @@ struct SelectRecordWindowView: View {
                 VStack {
                     
                     HStack() {
-                        Text("Select a window")
+                        Text("Select a Screen")
                             .font(.system(size: 14))
                             .fixedSize(horizontal: /*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/, vertical: false)
                             .frame(maxWidth: .infinity)
@@ -57,23 +60,23 @@ struct SelectRecordWindowView: View {
                                 GridItem(.flexible()),
                                 GridItem(.flexible())
                             ], spacing: 10) {
-                                ForEach(openedWindowList, id: \.self) { window in
+                                ForEach(screenList, id: \.self) { screen in
                                     VStack {
                                         ZStack {
-                                            Image(nsImage: window.image)
+                                            Image(nsImage: screen.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(width: 160, height: 120)
                                                 .cornerRadius(12)
                                                 .onTapGesture {
                                                     deselectAll()
-                                                    selectWindow(withID: window.windowID)
+                                                    selectScreen(withID: screen.displayID)
                                                 }.onHover { hover in
-                                                    hoveredItemId = window.windowID
+                                                    hoveredItemId = screen.displayID
                                                 }
                                         }
                                         .overlay(
-                                            window.isHovered ?
+                                            screen.isHovered ?
                                             RoundedRectangle(cornerRadius: 12)
                                                 .stroke(.appPurple, lineWidth: 10)
                                             : RoundedRectangle(cornerRadius: 12)
@@ -83,7 +86,7 @@ struct SelectRecordWindowView: View {
                                         .cornerRadius(12)
                                         .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
                                         
-                                        Text(window.title)
+                                        Text(screen.title)
                                             .font(.system(size: 12.0, weight: .medium))
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
@@ -94,20 +97,20 @@ struct SelectRecordWindowView: View {
                             .padding()
                         }
                         .onChange(of: hoveredItemId, perform: { id in
-                            for index in openedWindowList.indices {
-                                openedWindowList[index].isHovered = false
+                            for index in screenList.indices {
+                                screenList[index].isHovered = false
                             }
-                            if let index = openedWindowList.firstIndex(where: { $0.windowID == id }) {
-                                openedWindowList[index].isHovered = true
+                            if let index = screenList.firstIndex(where: { $0.displayID == id }) {
+                                screenList[index].isHovered = true
                             }
                         })
                         .onAppear {
-                            getOpenedWindowsList()
+                            getDisplayList()
                         }
                     }
                 }
                 .background(.white)
-                .frame(width: CGFloat(screenSize.width / 2.0), height: CGFloat(screenSize.height / 2.0))
+                .frame(width: CGFloat(screenSize.width / 2.0), height: 240.0)
                 .cornerRadius(12)
                 .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
                 .transition(.move(edge: .bottom))
@@ -118,35 +121,82 @@ struct SelectRecordWindowView: View {
             }
     }
     
+    
     func deselectAll() {
-        for index in openedWindowList.indices {
-            openedWindowList[index].isSelected = false
+        for index in screenList.indices {
+            screenList[index].isSelected = false
         }
     }
     
-    func selectWindow(withID windowID: CGWindowID) {
-        if let index = openedWindowList.firstIndex(where: { $0.windowID == windowID }) {
-            onSelectedWindow(openedWindowList[index])
-            openedWindowList[index].isSelected = true
+    func selectScreen(withID displayId: CGDirectDisplayID) {
+        if let index = screenList.firstIndex(where: { $0.displayID == displayId }) {
+            didScreenSelection(screenList[index])
+            screenList[index].isSelected = true
             self.showingPopup = false
         }
     }
     
-    func getScreenshotsOfOpenWindows() {
-        let options: CGWindowListOption = .optionOnScreenOnly
-        let windowListInfo = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: AnyObject]]
-        let visibleWindows = windowListInfo?.filter { $0["kCGWindowLayer"] as! Int == 0 }
-        visibleWindows?.forEach { windowInfo in
-            if let windowID = windowInfo[kCGWindowNumber as String] as? CGWindowID, let title = windowInfo[kCGWindowOwnerName as String] as? String,
-               let windowImage = CGWindowListCreateImage(.null, .optionIncludingWindow, windowID, .boundsIgnoreFraming) {
-                let image = NSImage(cgImage: windowImage, size: NSSize(width: windowImage.width, height: windowImage.height))
-                self.openedWindowList.append(OpenedWindowInfo(windowID: windowID, title: title, image: image, runningApplicationName: ""))
+    func captureDisplaysAndSaveToDocuments(screens: [(CGDirectDisplayID, CGRect)]) -> [ScreenInfo]? {
+        var capturedScreens: [ScreenInfo] = []
+        
+        for (index, screen) in screens.enumerated() {
+            var rect = CGDisplayBounds(screen.0)
+            
+            guard let colorSpace = CGColorSpace(name: CGColorSpace.genericRGBLinear) else {
+                print("Failed to create colorspace")
+                return nil
             }
+            
+            guard let cgContext = CGContext(data: nil,
+                                            width: Int(rect.width),
+                                            height: Int(rect.height),
+                                            bitsPerComponent: 8,
+                                            bytesPerRow: 0,
+                                            space: colorSpace,
+                                            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+                print("Failed to create bitmap context")
+                return nil
+            }
+            
+            cgContext.clear(CGRect(x: 0, y: 0, width: rect.width, height: rect.height))
+            
+            guard let image = CGDisplayCreateImage(screen.0) else {
+                continue
+            }
+            
+            let dest = CGRect(x: 0, y: 0, width: rect.width, height: rect.height)
+            cgContext.draw(image, in: dest)
+            
+            guard let finalImage = cgContext.makeImage() else {
+                print("Failed to create image from bitmap context")
+                return nil
+            }
+            
+            // Save to Documents directory with a unique filename
+            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let fileURL = documentsDirectory.appendingPathComponent("screenshot_\(index + 1).png")
+            
+            guard let destination = CGImageDestinationCreateWithURL(fileURL as CFURL, kUTTypePNG, 1, nil) else {
+                print("Failed to create image destination")
+                return nil
+            }
+            
+            CGImageDestinationAddImage(destination, finalImage, nil)
+            
+            if !CGImageDestinationFinalize(destination) {
+                print("Failed to finalize image destination")
+                return nil
+            }
+            
+            guard let uiImage = NSImage(contentsOf: fileURL) else { return  capturedScreens }
+            capturedScreens.append(ScreenInfo(displayID: screen.0, displaySize: DisplaySize(width: screen.1.width, height: screen.1.height), title: "Screen \(index + 1)", image: uiImage))
         }
+        
+        return capturedScreens
     }
     
-    private func getOpenedWindowsList() {
-        SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: false, completionHandler: { shareableContent, error in
+    private func getDisplayList() {
+        SCShareableContent.getWithCompletionHandler({ shareableContent, error in
             if let error = error {
                 print("Error retrieving windows: \(error.localizedDescription)")
                 return
@@ -158,20 +208,14 @@ struct SelectRecordWindowView: View {
             }
             
             DispatchQueue.main.async {
-                shareableContent.windows.forEach { window in
-                    guard window.frame.width >= 500,
-                          let windowImage = CGWindowListCreateImage(.null, .optionIncludingWindow, window.windowID, .boundsIgnoreFraming),
-                          let title = window.title,
-                          !title.isEmpty,
-                          !excluded.contains(title),
-                          !title.contains("Item-")
-                    else {
-                        return
-                    }
-                    let image = NSImage(cgImage: windowImage, size: NSSize(width: windowImage.width, height: windowImage.height))
-                    openedWindowList.append(OpenedWindowInfo(windowID: window.windowID, title: title, image: image, runningApplicationName: title))
+                shareableContent.displays.forEach {
+                    print("SCREENSIZE: \($0.width), \($0.height)")
+                }
+                if let screens = captureDisplaysAndSaveToDocuments(screens: shareableContent.displays.map { ($0.displayID, $0.frame) }) {
+                    self.screenList = screens
                 }
             }
         })
     }
 }
+

@@ -13,7 +13,7 @@ struct CameraPreviewOverlayView: View {
     var presentationStyle: CameraViewPresentationStyle = .partial
     @State var offset: CGSize = CGSize.zero
     @ObservedObject var viewModel: ContentViewModel
-    let screenSize = NSScreen.main?.frame.size ?? .zero
+    let screenSize: CGRect
     
     var body: some View {
         ZStack {
@@ -21,7 +21,7 @@ struct CameraPreviewOverlayView: View {
                 DraggableView(content: {
                     CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
                 }, callback: { _ in
-                }, contentSize: CGSize(width: 190, height: 130), specificWindowSize: offset).offset(x: offset.width, y: offset.height)
+                }, contentSize: CGSize(width: 190, height: 130), specificWindowSize: offset, screenSize: screenSize).offset(x: offset.width, y: offset.height)
             } else {
                 CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
             }
@@ -29,7 +29,7 @@ struct CameraPreviewOverlayView: View {
         .onAppear {
             viewModel.checkAuthorization()
         }
-        .frame(maxWidth: screenSize.width, maxHeight: screenSize.height, alignment: .topLeading)
+        .frame(width: screenSize.width, height: screenSize.height, alignment: .topLeading)
         .background(.clear)
     }
 }

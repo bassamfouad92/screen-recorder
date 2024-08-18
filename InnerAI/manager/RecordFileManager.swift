@@ -24,18 +24,27 @@ class RecordFileManager {
     
     func deleteAllMP4Files() {
         let fileManager = FileManager.default
-            do {
-                let directoryURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                let contents = try fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil)
-                for fileURL in contents {
-                    if fileURL.pathExtension == "mp4" || fileURL.pathExtension == "mov" {
-                        try fileManager.removeItem(at: fileURL)
-                        print("Deleted file: \(fileURL.lastPathComponent)")
-                    }
+        
+        // Dynamically get the user's home directory path and append the inneraivideos path
+        let directoryURL = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Documents/inneraivideos")
+        
+        // Check if the directory exists
+        guard fileManager.fileExists(atPath: directoryURL.path) else {
+            print("Directory not found at path: \(directoryURL.path)")
+            return
+        }
+        
+        do {
+            let contents = try fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil)
+            for fileURL in contents {
+                if fileURL.pathExtension.lowercased() == "mp4" || fileURL.pathExtension.lowercased() == "mov" {
+                    try fileManager.removeItem(at: fileURL)
+                    print("Deleted file: \(fileURL.lastPathComponent)")
                 }
-            } catch {
-                print("Error deleting files: \(error)")
             }
+        } catch {
+            print("Error deleting files: \(error)")
+        }
     }
     
     func fetchFileInfo(fromPath fileURL: URL) -> (fileSize: Int, fileType: String, fileName: String, fileURL: URL)? {

@@ -123,6 +123,7 @@ class AVCaptureDeviceManager {
             
             // MIC = 1, Speaker and headphone = 0
             if inputChannels == 1 {
+                print("MICROPHONE deviceId: \(deviceID), name: \(deviceName)")
                 devices.append(MicInfo(deviceId: deviceID, deviceName: deviceName))
             }
         }
@@ -130,6 +131,26 @@ class AVCaptureDeviceManager {
         return devices
         
     }
+
+    func getAudioDeviceTransportType(deviceID: AudioDeviceID) -> AudioDeviceTransportType {
+        var transportType: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyTransportType,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMaster
+        )
+
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &transportType)
+
+        if status != noErr {
+            print("Error getting transport type: \(status)")
+            return .other
+        }
+
+        return AudioDeviceTransportType(transportType: transportType)
+    }
+
    
     /// Returns all cameras on the device.
     func getListOfCameras() -> [AVCaptureDevice] {

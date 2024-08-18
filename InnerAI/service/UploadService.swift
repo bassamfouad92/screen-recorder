@@ -44,6 +44,7 @@ final class UploadServiceImp: UploadService {
                 case .success(let data):
                     promise(.success(Upload.Output(documentId: data.documentId, bucketUrl: data.preSignedUrl)))
                 case .failure(let error):
+                    print("UploadInitiateRequest: EEROR:::: \(error)")
                     promise(.failure(error))
                 }
             }

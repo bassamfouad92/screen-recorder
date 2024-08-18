@@ -42,13 +42,21 @@ extension AppDelegate {
         hideCameraWindow()
     }
     
-    func showCameraWindow(viewModel: ContentViewModel, presentationStyle: CameraViewPresentationStyle, offset: CGSize) {
-        self.cameraWindow?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(presentationStyle: presentationStyle, offset: offset, viewModel: viewModel).environmentObject(self))
+    func showCameraWindow(viewModel: ContentViewModel, presentationStyle: CameraViewPresentationStyle, offset: CGSize, screenSize: CGRect, displayId: CGDirectDisplayID = CGMainDisplayID()) {
+        self.cameraWindow?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(presentationStyle: presentationStyle, offset: offset, viewModel: viewModel, screenSize: screenSize).environmentObject(self))
         if presentationStyle == .full {
             cameraWindow?.level = .normal
         } else {
             cameraWindow?.level = .mainMenu
         }
+        // Move camera window to external display
+        WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+            WindowInfo(windowTitle: "CameraWindow", appName: "Screen Recoder by Inner AI")
+        ], toDisplay: displayId)
+        
+        self.cameraWindow?.setFrame(screenSize, display: true)
+        self.cameraWindow?.toggleFullScreen(nil)
+        
         cameraWindow?.makeKeyAndOrderFront(nil)
         cameraWindow?.contentView?.isHidden = false
     }

@@ -35,6 +35,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
     var autioStartTime: Date?
     var streamType: StreamType?
     var audioDeviceId: UInt32 = 0
+    var audioDeviceTransportType: AudioDeviceTransportType = .builtIn
     var isPause: Bool = false {
         didSet {
             if isPause {
@@ -269,7 +270,6 @@ extension ScreenRecordManager {
             audioWriter?.add(awInput)
         }*/
         if recordMic {
-            print("Record Microphone on!!!!")
             if videoWriter.canAdd(micInput) {
                 videoWriter.add(micInput)
             }
@@ -277,10 +277,12 @@ extension ScreenRecordManager {
             let input = audioEngine.inputNode
             
             if audioDeviceId != 0 {
-                guard let inputUnit: AudioUnit = input.audioUnit else { return }
-                var inputDeviceID: AudioDeviceID = audioDeviceId
-                AudioUnitSetProperty(inputUnit, kAudioOutputUnitProperty_CurrentDevice,
-                                             kAudioUnitScope_Global, 0, &inputDeviceID, UInt32(MemoryLayout<AudioDeviceID>.size))
+                /// When you try to set the kAudioOutputUnitProperty_CurrentDevice property on the AudioUnit of the AVAudioEngine's input node, it might not work as expected for Bluetooth devices like AirPods. This is because AVAudioEngine is designed to work with the system's default audio route, and changing the input/output devices programmatically might conflict with how AVAudioEngine manages audio routes. So we need to set mac's input device to working with bluetooth
+                if audioDeviceTransportType == .bluetooth {
+                    setupMicInputToSystem()
+                } else {
+                    setupMicInputToAudioUnit()
+                }
             }
             
             input.installTap(onBus: 0, bufferSize: 1024, format: input.inputFormat(forBus: 0)) { [self] (buffer, time) in
@@ -320,6 +322,7 @@ extension ScreenRecordManager {
             }
         }
     }
+    
 
     func stopRecording() async throws {
         
@@ -546,5 +549,31 @@ extension AVAudioPCMBuffer {
         ) == noErr else { return nil }
 
         return sampleBuffer
+    }
+}
+
+extension ScreenRecordManager {
+    private func setupMicInputToSystem() {
+        var inputDeviceID: AudioDeviceID = audioDeviceId
+        var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+
+        let status = AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                                &address,
+                                                0,
+                                                nil,
+                                                UInt32(MemoryLayout<AudioDeviceID>.size),
+                                                &inputDeviceID)
+        if status != noErr {
+            print("Failed to set default input device with error: \(status)")
+        }
+    }
+    
+    private func setupMicInputToAudioUnit() {
+        guard let inputUnit: AudioUnit = audioEngine.inputNode.audioUnit else { return }
+        var inputDeviceID: AudioDeviceID = audioDeviceId
+        AudioUnitSetProperty(inputUnit, kAudioOutputUnitProperty_CurrentDevice,
+                                     kAudioUnitScope_Global, 0, &inputDeviceID, UInt32(MemoryLayout<AudioDeviceID>.size))
     }
 }
