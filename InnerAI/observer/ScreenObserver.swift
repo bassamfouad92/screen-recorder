@@ -21,6 +21,7 @@ class ScreenObserver: ObservableObject {
                 self?.onScreenChange()
             }
             .store(in: &cancellables)
+        print("ScreenObserver: \(self.screenCount)")
     }
     
     func onScreenChange() {

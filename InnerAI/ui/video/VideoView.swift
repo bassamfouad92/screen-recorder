@@ -51,7 +51,7 @@ struct VideoView: View {
     var body: some View {
         ZStack {
             if recordConfig.videoWindowType == .specific && recordConfig.windowInfo != nil {
-                SpecificWindowCropView(title: recordConfig.windowInfo?.runningApplicationName ?? "", onWindowFront: { bottomLeftPos,_ in
+                SpecificWindowCropView(title: recordConfig.windowInfo?.title ?? "", onWindowFront: { bottomLeftPos,_ in
                     if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
                         appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: CGSize(width:  bottomLeftPos.x + 20, height: bottomLeftPos.y - 200), screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
                     }
@@ -109,22 +109,11 @@ struct VideoView: View {
     
     // MARK: Screen capture kit handler
     private func getSpecificWindow() {
-        
-        SCShareableContent.getWithCompletionHandler { shareableContent, error in
-            if let error = error {
-                print("Error retrieving windows: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let shareableContent = shareableContent else {
-                print("Error: Shareable content is nil")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                let windowID = recordConfig.windowInfo?.windowID
-                selectedWindow = shareableContent.windows.first(where: { $0.windowID == windowID })
-                cameraWindow = shareableContent.windows.first(where: { $0.title == "CameraWindow" })
+        Task {
+            let sharableContent = try await SCShareableContent.current
+            if let windowID = recordConfig.windowInfo?.windowID {
+                selectedWindow = sharableContent.windows.first(where: { $0.windowID == windowID })
+                cameraWindow = sharableContent.windows.first(where: { $0.title == "CameraWindow" })
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     startRecording()
                 }
@@ -173,9 +162,13 @@ extension VideoView {
             getSpecificWindow()
         } else if recordConfig.videoWindowType == .camera {
             if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero, screenSize: screenSize)
+                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero, screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
                 appDelegate.makeDefaultOverlayWindowsOnTop()
             }
+            // Move camera window to external display
+            WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+                WindowInfo(windowTitle: "CameraWindow", appName: "Screen Recoder by Inner AI")
+            ], toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
             getCameraOnlyWindows()
         } else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -185,7 +178,7 @@ extension VideoView {
     }
     
     private func moveWindowToExternalIfNeeded() {
-        if recordConfig.isExternalDisplayConnected && recordConfig.videoWindowType == .fullScreen {
+        if recordConfig.isExternalDisplayConnected && (recordConfig.videoWindowType == .fullScreen || recordConfig.videoWindowType == .camera) {
             /// If external screen connected move controls window i.e InnerAIRecordWindow to external display
             let windowsToMove = [
                 WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI"),
@@ -208,6 +201,7 @@ extension VideoView {
             screenRecordManager = ScreenRecordManager()
             screenRecordManager?.audioDeviceId = recordConfig.audioDeviceId ?? 0
             screenRecordManager?.recordMic = recordConfig.settings.enableAudio
+            screenRecordManager?.audioDeviceTransportType = recordConfig.audioDeviceTransportType ?? .builtIn
             screenRecordManager?.onStopStream = { stream in
                 DispatchQueue.main.async {
                     self.stopRecording()

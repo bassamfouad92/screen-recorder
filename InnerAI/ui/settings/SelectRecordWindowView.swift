@@ -169,7 +169,7 @@ struct SelectRecordWindowView: View {
                         return
                     }
                     let image = NSImage(cgImage: windowImage, size: NSSize(width: windowImage.width, height: windowImage.height))
-                    openedWindowList.append(OpenedWindowInfo(windowID: window.windowID, title: title, image: image, runningApplicationName: title))
+                    openedWindowList.append(OpenedWindowInfo(windowID: window.windowID, title: title, image: image, runningApplicationName: window.owningApplication?.applicationName ?? ""))
                 }
             }
         })

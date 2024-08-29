@@ -85,14 +85,13 @@ final class RecordSettingsViewModel: ObservableObject {
         }
     }
     
-    var isExternelScreenConnected: Bool? {
-        return screenObserver.screenCount > 1
-    }
+    var isExternelScreenConnected: Bool = false
 
     private var cancellables = Set<AnyCancellable>()
     
     func subscribeToScreenObserver() {
         screenObserver.getScreensList()
+        isExternelScreenConnected = screenObserver.screenCount > 1
     }
 
     func checkForUpdates() {
@@ -173,9 +172,7 @@ final class RecordSettingsViewModel: ObservableObject {
         if let screen = screeninfo {
             recordConfig = recordConfig.withScreenInfo(screen)
         }
-        if isExternelScreenConnected ?? false {
-            recordConfig = recordConfig.withExternalDisplay(true)
-        }
+        recordConfig = recordConfig.withExternalDisplay(isExternelScreenConnected)
     }
     
     func appendAvailableCamerasAndMicrophone() {

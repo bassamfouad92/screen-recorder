@@ -110,7 +110,11 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         
         if let cropRect = selectedWindow?.frame {
             // ScreenCaptureKit uses top-left of screen as origin
-            conf.sourceRect = cropRect
+            if displayID != CGMainDisplayID() {
+                conf.sourceRect = CGRect(x: cropRect.origin.x - CGDisplayBounds(displayID).origin.x, y: cropRect.origin.y, width: cropRect.width, height: cropRect.height)
+            } else {
+                conf.sourceRect = cropRect
+            }
             conf.width = Int(cropRect.width) * displayScaleFactor
             conf.height = Int(cropRect.height) * displayScaleFactor
         } else {
@@ -122,11 +126,10 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         guard let display = sharableContent.displays.first(where: { $0.displayID == displayID }) else {
             throw RecordingError("Can't find display with ID \(displayID) in sharable content")
         }
-        
         let filter = SCContentFilter(display: display, excludingWindows: excludedWindows ?? [])
-        
+        //stream = SCStream(filter: SCContentFilter(desktopIndependentWindow:             sharableContent.windows.first(where: {$0.windowID == 60})!), configuration: conf, delegate: self)
         if let choosed = selectedWindow {
-            var includings: [SCWindow] = [choosed]
+           var includings: [SCWindow] = [choosed]
             if let cameraWindow = cameraWindow {
                 includings.append(cameraWindow)
                 stream = SCStream(filter: SCContentFilter(display: display, including: includings), configuration: conf, delegate: self)

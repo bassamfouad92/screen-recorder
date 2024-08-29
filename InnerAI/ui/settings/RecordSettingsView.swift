@@ -333,14 +333,18 @@ struct RecordSettingsView: View {
         
         switch viewModel.recordConfig.videoWindowType {
         case .fullScreen:
-            if viewModel.isExternelScreenConnected ?? false {
-                routeToScreenSelection()
+            if viewModel.isExternelScreenConnected {
+                routeToScreenSelection(withType: .fullScreen)
                 return
             }
             routeToVideoRecordView()
         case .specific:
             validateIfSpecificWindowAvailable()
-        default:
+        case .camera:
+            if viewModel.isExternelScreenConnected {
+                routeToScreenSelection(withType: .camera)
+                return
+            }
             routeToVideoRecordView()
         }
     }
@@ -379,6 +383,7 @@ extension RecordSettingsView {
     func routeToVideoRecordView() {
         hideOptionsPopOver()
         closeAllRecoredWindows()
+        
         appDelegate.diplayVideoWindowView(withRecord: viewModel.recordConfig, callback: { state in
             switch state {
             case .inProgress:
@@ -396,7 +401,7 @@ extension RecordSettingsView {
         })
     }
     
-    func routeToScreenSelection() {
+    func routeToScreenSelection(withType type: VideoWindowType) {
         guard CGPreflightScreenCaptureAccess() else {
             showAlert = true
             return
@@ -406,8 +411,10 @@ extension RecordSettingsView {
             DispatchQueue.main.async {
                 if accessibilityEnabled {
                     self.appDelegate.diplaySelectScreenPopupView(completion: { selectedScreen in
-                        self.viewModel.configureRecordConfig(videoWindowType: .fullScreen, screeninfo: selectedScreen)
-                        print("SELECTED SCREEN: \(selectedScreen.displayID), size:  \(selectedScreen.displaySize.width), \(selectedScreen.displaySize.height)")
+                        if selectedScreen.displayID != CGMainDisplayID() {
+                            self.viewModel.isExternelScreenConnected = true
+                        }
+                        self.viewModel.configureRecordConfig(videoWindowType: type, screeninfo: selectedScreen)
                         self.routeToVideoRecordView()
                     })
                 } else {

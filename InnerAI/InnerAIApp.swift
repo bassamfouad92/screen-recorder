@@ -285,35 +285,34 @@ extension AppDelegate {
         
         let rootView: VideoView
         var windowFrame: CGRect = .zero
+        var newConfig = config
         
-        if config.isExternalDisplayConnected {
-            if let screenWidth = config.screenInfo?.displaySize.width, let screenHeight = config.screenInfo?.displaySize.height {
-                windowFrame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
-            }
+        if config.videoWindowType == .specific {
             
             if let windowInfo = config.windowInfo,
                let windowOnFront = WindowUtil.getWindow(windowTitle: windowInfo.title, withAppName: windowInfo.runningApplicationName),
-               let displayId = WindowUtil.getDisplayId(from: windowOnFront), displayId != 1 {
+               let displayId = WindowUtil.getDisplayId(from: windowOnFront) {
                 
                 windowFrame = CGDisplayBounds(displayId)
+                newConfig = config.withScreenInfo(ScreenInfo(displayID: displayId, displaySize: DisplaySize(width: windowFrame.width, height: windowFrame.height), title: "", image: .checkIcon))
                 
                 // Move window to external display
                 WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
                     WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
                 ], toDisplay: displayId)
-                
                 self.window?.setFrame(windowFrame, display: true)
                 self.window?.toggleFullScreen(nil)
+            }
+        } else {
+            if let screenSize = config.screenInfo?.displaySize {
+                windowFrame = CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height)
             } else {
                 guard let screenSize = NSScreen.main?.frame else { return }
                 windowFrame = screenSize
             }
-        } else {
-            guard let screenSize = NSScreen.main?.frame else { return }
-            windowFrame = screenSize
         }
         
-        rootView = VideoView(screenSize: windowFrame, recordConfig: config, onStateChanged: callback)
+        rootView = VideoView(screenSize: windowFrame, recordConfig: newConfig, onStateChanged: callback)
         self.window?.contentView = NSHostingView(rootView: rootView.environmentObject(self))
         showWindow()
     }
@@ -327,7 +326,7 @@ extension AppDelegate {
     
     func diplayCropWindowView(showWith windowInfo: OpenedWindowInfo, withRecord config: RecordConfiguration, isExternalScreen: Bool = false, callback: @escaping (_ displayId: CGDirectDisplayID) -> Void) {
         
-        let rootView = SpecificWindowCropView(title: windowInfo.runningApplicationName, onWindowFront: { _, displayId in
+        let rootView = SpecificWindowCropView(title: windowInfo.title, onWindowFront: { _, displayId in
             callback(displayId)
         }).environmentObject(self)
         
@@ -341,7 +340,7 @@ extension AppDelegate {
             WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
                 WindowInfo(windowTitle: "InnerAIRecordWindow", appName: "Screen Recoder by Inner AI")
             ], toDisplay: displayId)
-            
+                        
             let displayBounds = CGDisplayBounds(displayId)
             // Set the window frame to match the external display bounds
             self.window?.setFrame(displayBounds, display: true)

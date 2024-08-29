@@ -138,7 +138,7 @@ class AVCaptureDeviceManager {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyTransportType,
             mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMaster
+            mElement: kAudioObjectPropertyElementMain
         )
 
         let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &transportType)
@@ -147,7 +147,6 @@ class AVCaptureDeviceManager {
             print("Error getting transport type: \(status)")
             return .other
         }
-
         return AudioDeviceTransportType(transportType: transportType)
     }
 
