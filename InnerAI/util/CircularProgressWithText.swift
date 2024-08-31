@@ -18,13 +18,13 @@ struct CircularProgressWithText: View {
         VStack {
             ZStack {
                 Circle()
-                    .stroke(lineWidth: 10.0)
+                    .stroke(lineWidth: 15.0)
                     .opacity(0.3)
                     .foregroundColor(.progressBarUnfilled)
                 
                 Circle()
                     .trim(from: 0.0, to: CGFloat(progress))
-                    .stroke(style: StrokeStyle(lineWidth: 10.0, lineCap: .round, lineJoin: .round))
+                    .stroke(style: StrokeStyle(lineWidth: 15.0, lineCap: .round, lineJoin: .round))
                     .fill(LinearGradient(
                         gradient: Gradient(colors: [
                             Color(red: 113/255, green: 99/255, blue: 255/255),
@@ -37,8 +37,7 @@ struct CircularProgressWithText: View {
                 
                 // Optional: Add a text view to show percentage if needed
                 Text(String(format: "%.0f%%", progress * 100))
-                    .font(.title)
-                    .fontWeight(.bold)
+                    .font(.custom("DMSans-Bold", size: 34))
                     .foregroundStyle(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -52,7 +51,7 @@ struct CircularProgressWithText: View {
                 
             }
             .shadow(color: Color.gray.opacity(0.6), radius: 8, x: 0, y: 4)
-            .frame(width: 100, height: 100)
+            .frame(width: 151, height: 151)
             
         }
         /*.onReceive(timer) { _ in

@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>DMSans-Black.ttf</string>
+        <string>DMSans-Bold.ttf</string>
+        <string>DMSans-ExtraBold.ttf</string>
+        <string>DMSans-ExtraLight.ttf</string>
+        <string>DMSans-Light.ttf</string>
+        <string>DMSans-Medium.ttf</string>
+        <string>DMSans-Regular.ttf</string>
+        <string>DMSans-SemiBold.ttf</string>
+        <string>DMSans-Thin.ttf</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -43,12 +55,12 @@
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Please allow microphone to record your video with audio</string>
-    <key>NSFileProtectionComplete</key>
-    <string>File Protection Complete</string>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <true/>
-    </dict>
+	<key>NSFileProtectionComplete</key>
+	<string>File Protection Complete</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

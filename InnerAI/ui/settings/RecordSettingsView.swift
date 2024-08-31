@@ -96,8 +96,12 @@ struct RecordSettingsView: View {
                        }
                    })
                    SettingOptionView(model: $cameraSettingOption, OnSelected: {}, onTap: {
+                       guard viewModel.cameraOptions.count > 1 else {
+                           settingsViewType = .none
+                           return
+                       }
                        if settingsViewType == .camera {
-                               settingsViewType = .none
+                           settingsViewType = .none
                        } else {
                            settingsViewType = .camera
                        }
@@ -119,12 +123,8 @@ struct RecordSettingsView: View {
                        videoSettingOption = videoOption.withRightIcon(.settings).withSelected(false)
                        viewModel.setSelectedVideo(with: videoOption as! VideoOption)
                    }
-                   if let camera = viewModel.cameraOptions.first(where: { $0.isSelected }) {
-                       cameraSettingOption = camera.withRightIcon(.settings).withSelected(false)
-                   }
-                   if let mic = viewModel.voiceOptions.first(where: { $0.isSelected }) {
-                       micSettingOption = mic.withRightIcon(.settings).withSelected(false)
-                   }
+                   setupCameraOption()
+                   setupMicrophoneOption()
                    //delete all saved files
                    RecordFileManager.shared.deleteAllMP4Files()
                }
@@ -209,11 +209,20 @@ struct RecordSettingsView: View {
                         hideOptionsPopOver()
                         
                        switch option.videoWindowType {
-                          case .fullScreen, .camera:
+                          case .fullScreen:
                             videoSettingOption = option.withRightIcon(.settings).withSelected(false)
                             viewModel.setSelectedVideo(with: option)
                             viewModel.configureRecordConfig(videoWindowType: option.videoWindowType)
+                            resetCameraList()
+                          case .camera:
+                           videoSettingOption = option.withRightIcon(.settings).withSelected(false)
+                           viewModel.setSelectedVideo(with: option)
+                           viewModel.configureRecordConfig(videoWindowType: option.videoWindowType)
+                           viewModel.removeNoCameraOption()
+                           viewModel.configureCameraOption(isDefault: false)
+                           setupCameraOption()
                           case .specific:
+                            resetCameraList()
                             routeToWindowSelectionIfNeeded(option: option)
                         }
                         
@@ -506,15 +515,32 @@ extension RecordSettingsView {
     private func subscribeToDeviceListener() {
         deviceObserver.onDeviceStatusChanged = { 
             hideOptionsPopOver()
-            viewModel.appendAvailableCamerasAndMicrophone()
+            resetCameraList()
+            setupMicrophoneOption()
+        }
+    }
+    private func resetCameraList() {
+        viewModel.appendAvailableCamerasAndMicrophone()
+        if viewModel.recordConfig.videoWindowType == .camera {
+            viewModel.removeNoCameraOption()
+            viewModel.configureCameraOption(isDefault: false)
+        } else  {
             viewModel.configureCameraAndMic()
-            
-            if let camera = viewModel.cameraOptions.first(where: { $0.isSelected }) {
-                cameraSettingOption = camera.withRightIcon(.settings).withSelected(false)
-            }
-            if let mic = viewModel.voiceOptions.first(where: { $0.isSelected }) {
-                micSettingOption = mic.withRightIcon(.settings).withSelected(false)
-            }
+        }
+        setupCameraOption()
+    }
+}
+
+extension RecordSettingsView {
+    private func setupCameraOption() {
+        if let camera = viewModel.cameraOptions.first(where: { $0.isSelected }) {
+            cameraSettingOption = camera.withRightIcon(.settings).withSelected(false)
+        }
+    }
+    
+    private func setupMicrophoneOption() {
+        if let mic = viewModel.voiceOptions.first(where: { $0.isSelected }) {
+            micSettingOption = mic.withRightIcon(.settings).withSelected(false)
         }
     }
 }

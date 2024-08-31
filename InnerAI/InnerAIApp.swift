@@ -50,6 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     @MainActor func applicationDidFinishLaunching(_ notification: Notification) {
+        registerFonts()
         configureRayGun()
         configureRollBar()
         configureOverlayWindow()
@@ -359,5 +360,27 @@ extension AppDelegate: NSPopoverDelegate {
     }
     func popoverDidClose(_ notification: Notification) {
         NotificationCenter.default.post(name: NSNotification.Name(rawValue: "popover"), object: ["is_show" : false])
+    }
+}
+
+extension AppDelegate {
+    func registerFonts() {
+        let fontNames = ["DMSans-Light", "DMSans-Regular", "DMSans-Medium", "DMSans-Bold", "DMSans-SemiBold"]
+
+        for fontName in fontNames {
+            if let fontURL = Bundle.main.url(forResource: fontName, withExtension: "ttf"),
+               let fontData = try? Data(contentsOf: fontURL),
+               let provider = CGDataProvider(data: fontData as CFData),
+               let font = CGFont(provider) {
+                var error: Unmanaged<CFError>?
+                if !CTFontManagerRegisterGraphicsFont(font, &error) {
+                    print("Failed to load \(fontName): \(String(describing: error?.takeUnretainedValue().localizedDescription))")
+                } else {
+                    print("\(fontName) registered successfully.")
+                }
+            } else {
+                print("Failed to load \(fontName).")
+            }
+        }
     }
 }

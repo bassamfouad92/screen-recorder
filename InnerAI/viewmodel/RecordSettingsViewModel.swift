@@ -21,9 +21,11 @@ final class RecordSettingsViewModel: ObservableObject {
         VideoOption(rightIcon: .check, videoWindowType: .camera)
     ]
     
-    var cameraOptions: [any SelectableOption] = [
-        CameraOption(title: "No Camera", rightIcon: .check).onCamera(false),
-    ]
+    private var noCameraOption: CameraOption {
+        CameraOption(title: "No Camera", rightIcon: .check).onCamera(false)
+    }
+    
+    var cameraOptions: [any SelectableOption] = []
     
     var voiceOptions: [any SelectableOption] = [
         VoiceOption(title: "No Microphone", rightIcon: .check).onMicrophone(false),
@@ -73,15 +75,13 @@ final class RecordSettingsViewModel: ObservableObject {
     
     var allowCamera: Bool? {
         didSet {
-            guard let state = allowCamera else { return }
-            recordConfig = recordConfig.withCamera(state)
+            recordConfig = recordConfig.withCamera(allowCamera ?? false)
         }
     }
     
     var allowMicrophone: Bool? {
         didSet {
-            guard let state = allowMicrophone else { return }
-            recordConfig = recordConfig.withAudio(state)
+            recordConfig = recordConfig.withAudio(allowMicrophone ?? false)
         }
     }
     
@@ -141,6 +141,7 @@ final class RecordSettingsViewModel: ObservableObject {
     init() {
         self.selectedVideoOption = videoOptions[0] as! VideoOption
         self.deviceManager = AVCaptureDeviceManager.shared
+        self.cameraOptions.append(noCameraOption)
         appendAvailableCamerasAndMicrophone()
     }
     
@@ -177,7 +178,8 @@ final class RecordSettingsViewModel: ObservableObject {
     
     func appendAvailableCamerasAndMicrophone() {
         //remove all before setting new devices
-        cameraOptions = cameraOptions.filter { $0.title == "No Camera" }
+        cameraOptions.removeAll()
+        cameraOptions.append(noCameraOption)
         voiceOptions = voiceOptions.filter { $0.title == "No Microphone" }
         
         cameraOptions.append(contentsOf: (deviceManager.getListOfCamerasAsString().map {
@@ -188,21 +190,33 @@ final class RecordSettingsViewModel: ObservableObject {
         }))
     }
     
+    func removeNoCameraOption() {
+        cameraOptions = cameraOptions.filter { $0.title != "No Camera" }
+    }
+    
+    func configureCameraOption(isDefault: Bool = true) {
+        if isDefault,
+           let defaultCameraName = deviceManager.getDefaultCamera()?.localizedName,
+           let defaultCameraOption = cameraOptions.first(where: { $0.title == defaultCameraName }) as? CameraOption {
+            setDefaultCamera()
+            setSelectedCamera(with: defaultCameraOption)
+        } else if let firstCameraOption = cameraOptions.first as? CameraOption {
+            setSelectedCamera(with: firstCameraOption)
+        }
+    }
+    
+    func configureMicrophoneOption() {
+        guard cameraOptions.count > 1 else { return }
+        let defaultMic = deviceManager.getDefaultMicrophone()?.localizedName ?? ""
+        if let defaultVoiceOption = voiceOptions.first(where: { $0.title == defaultMic }) {
+            setSelectedMicrophone(with: defaultVoiceOption as! VoiceOption)
+        }
+    }
+    
     func configureCameraAndMic() {
-        if cameraOptions.count > 1 {
-            let defaultCamera = deviceManager.getDefaultCamera()?.localizedName ?? ""
-            if let defaultCameraOption = cameraOptions.first(where: { $0.title == defaultCamera }) {
-                setDefaultCamera()
-                setSelectedCamera(with: defaultCameraOption as! CameraOption)
-            }
-        }
-        if voiceOptions.count > 1 {
-            let defaultMic = deviceManager.getDefaultMicrophone()?.localizedName ?? ""
-            
-            if let defaultVoiceOption = voiceOptions.first(where: { $0.title == defaultMic }) {
-                setSelectedMicrophone(with: defaultVoiceOption as! VoiceOption)
-            }
-        }
+        guard cameraOptions.count > 1 else { return }
+        configureCameraOption()
+        configureMicrophoneOption()
     }
 }
 

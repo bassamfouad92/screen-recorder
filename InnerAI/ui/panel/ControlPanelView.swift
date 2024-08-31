@@ -27,7 +27,61 @@ struct ControlPanelView: View {
 
     var onClicked: (RecordingAction) -> Void
     
+    @State private var showTooltip = false
+    @State private var showFinishTooltip = false
+    @State private var showPlayPauseTooltip = false
+    @State private var showRestartTooltip = false
+    @State private var showDeleteTooltip = false
+
     var body: some View {
+         VStack(spacing: 0) {
+             if showTooltip {
+                 LazyHStack(spacing: 10) {
+                     Text("     ").frame(width: 24, height: 0.5).overlay {
+                         TooltipView(
+                             alignment: .top,
+                             isVisible: $showFinishTooltip
+                         ) {
+                             Text("Finish")
+                                 .frame(height: 20)
+                         }
+                     }
+                     Text("     ").frame(maxHeight: 0.5)
+                     Text("   ").frame(maxHeight: 0.5)
+                     Text("     ").frame(width: 24, height: 0.5).overlay {
+                         TooltipView(
+                             alignment: .top,
+                             isVisible: $showPlayPauseTooltip
+                         ) {
+                             Text(isPlaying ? "Pause" : "Resume")
+                                 .frame(height: 20)
+                         }
+                     }
+                     Image("line")
+                         .resizable()
+                         .frame(width: 2, height: 0.5).tint(.clear)
+                     Text("     ").frame(width: 24, height: 0.5).overlay {
+                         TooltipView(
+                             alignment: .top,
+                             isVisible: $showRestartTooltip
+                         ) {
+                             Text("Restart")
+                                 .frame(height: 20)
+                         }
+                     }
+                     Text("     ").frame(width: 24, height: 0.5).overlay {
+                         TooltipView(
+                             alignment: .top,
+                             isVisible: $showDeleteTooltip
+                         ) {
+                             Text("Delete")
+                                 .frame(height: 20)
+                         }
+                     }
+                     Text(" ")
+                         .frame(width: 24, height: 0.5)
+                 }.frame(maxHeight: 0.5).background(.clear)
+             }
             LazyHStack(spacing: 10) {
                 Button(action: {
                     onClicked(.stop)
@@ -35,7 +89,10 @@ struct ControlPanelView: View {
                     Image("stop_icon")
                         .resizable()
                         .frame(width: 24, height: 24)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).onHover { hovering in
+                    showTooltip = hovering
+                    showFinishTooltip = hovering
+                }
                 TimerView(timerString: $timerString, isRestart: $restartRecording, isPlaying: $isPlaying, lastTime: $lastTime)
                 if isPlaying {
                     Button(action: {
@@ -45,7 +102,10 @@ struct ControlPanelView: View {
                         Image("pause_icon")
                             .resizable()
                             .frame(width: 24, height: 24)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).onHover { hovering in
+                        showTooltip = hovering
+                        showPlayPauseTooltip = hovering
+                    }
                 } else {
                     Button(action: {
                         isPlaying = true
@@ -54,7 +114,10 @@ struct ControlPanelView: View {
                         Image("play_icon")
                             .resizable()
                             .frame(width: 24, height: 24)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).onHover { hovering in
+                        showTooltip = hovering
+                        showPlayPauseTooltip = hovering
+                    }
                 }
                 
                 Image("line")
@@ -66,14 +129,20 @@ struct ControlPanelView: View {
                     Image("restart_icon")
                         .resizable()
                         .frame(width: 24, height: 24)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).onHover { hovering in
+                    showTooltip = hovering
+                    showRestartTooltip = hovering
+                }
                 Button(action: {
                     onClicked(.delete)
                 }) {
                     Image("delete_icon")
                         .resizable()
                         .frame(width: 24, height: 24)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).onHover { hovering in
+                    showTooltip = hovering
+                    showDeleteTooltip = hovering
+                }
                 Text(" ")
                     .frame(width: 24, height: 24)
             }
@@ -93,6 +162,7 @@ struct ControlPanelView: View {
             .padding()
             .background(.black)
             .cornerRadius(70)
+         }
     }
 }
 
@@ -169,5 +239,79 @@ public func TimerPublisher(every: CGFloat) -> Publishers.Autoconnect<Timer.Timer
 public extension Publishers.Autoconnect where Upstream == Timer.TimerPublisher {
     func stopTimerPublisher() {
         self.upstream.connect().cancel()
+    }
+}
+
+struct TooltipView<Content: View>: View {
+    let alignment: Edge
+    @Binding var isVisible: Bool
+    let content: () -> Content
+    let arrowOffset = CGFloat(8)
+
+    private var oppositeAlignment: Alignment {
+        let result: Alignment
+        switch alignment {
+        case .top: result = .bottom
+        case .bottom: result = .top
+        case .leading: result = .trailing
+        case .trailing: result = .leading
+        }
+        return result
+    }
+
+    private var theHint: some View {
+        content()
+            .padding()
+            .background(Color.black)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+            .background(alignment: oppositeAlignment) {
+
+                // The arrow is a square that is rotated by 45 degrees
+                Rectangle()
+                    .fill(Color.black)
+                    .frame(width: 15, height: 15)
+                    .rotationEffect(.degrees(45))
+                    .offset(x: alignment == .leading ? arrowOffset : 0)
+                    .offset(x: alignment == .trailing ? -arrowOffset : 0)
+                    .offset(y: alignment == .top ? arrowOffset : 0)
+                    .offset(y: alignment == .bottom ? -arrowOffset : 0)
+            }
+            .padding()
+            .fixedSize()
+    }
+
+    var body: some View {
+        if isVisible {
+            GeometryReader { proxy1 in
+
+                // Use a hidden version of the hint to form the footprint
+                theHint
+                    .hidden()
+                    .overlay {
+                        GeometryReader { proxy2 in
+
+                            // The visible version of the hint
+                            theHint
+                                .drawingGroup()
+                                .shadow(radius: 4)
+
+                                // Center the hint over the source view
+                                .offset(
+                                    x: -(proxy2.size.width / 2) + (proxy1.size.width / 2),
+                                    y: -(proxy2.size.height / 2) + (proxy1.size.height / 2)
+                                )
+                                // Move the hint to the required edge
+                                .offset(x: alignment == .leading ? (-proxy2.size.width / 2) - (proxy1.size.width / 2) : 0)
+                                .offset(x: alignment == .trailing ? (proxy2.size.width / 2) + (proxy1.size.width / 2) : 0)
+                                .offset(y: alignment == .top ? (-proxy2.size.height / 2) - (proxy1.size.height / 2) : 0)
+                                .offset(y: alignment == .bottom ? (proxy2.size.height / 2) + (proxy1.size.height / 2) : 0)
+                        }
+                    }
+            }
+            .onTapGesture {
+                isVisible.toggle()
+            }
+        }
     }
 }

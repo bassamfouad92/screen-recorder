@@ -13,6 +13,16 @@
 		5813B9B82BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5813B9B72BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift */; };
 		5819B7702BFF3300006C5F12 /* RollbarNotifier in Frameworks */ = {isa = PBXBuildFile; productRef = 5819B76F2BFF3300006C5F12 /* RollbarNotifier */; };
 		5819B7732BFF400B006C5F12 /* raygun4apple in Frameworks */ = {isa = PBXBuildFile; productRef = 5819B7722BFF400B006C5F12 /* raygun4apple */; };
+		581A8DC12C82654E00C01E0A /* DMSans-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DAF2C82627300C01E0A /* DMSans-Black.ttf */; };
+		581A8DC22C82654E00C01E0A /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB62C82627300C01E0A /* DMSans-Bold.ttf */; };
+		581A8DC32C82654E00C01E0A /* DMSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB32C82627300C01E0A /* DMSans-ExtraBold.ttf */; };
+		581A8DC42C82654E00C01E0A /* DMSans-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB22C82627300C01E0A /* DMSans-ExtraLight.ttf */; };
+		581A8DC52C82654E00C01E0A /* DMSans-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB12C82627300C01E0A /* DMSans-Light.ttf */; };
+		581A8DC62C82654E00C01E0A /* DMSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB42C82627300C01E0A /* DMSans-Medium.ttf */; };
+		581A8DC72C82654E00C01E0A /* DMSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DAE2C82627300C01E0A /* DMSans-Regular.ttf */; };
+		581A8DC82C82654E00C01E0A /* DMSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DAD2C82627300C01E0A /* DMSans-SemiBold.ttf */; };
+		581A8DC92C82654E00C01E0A /* DMSans-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB52C82627300C01E0A /* DMSans-Thin.ttf */; };
+		581A8DCC2C832D4B00C01E0A /* AxisTooltip in Frameworks */ = {isa = PBXBuildFile; productRef = 581A8DCB2C832D4B00C01E0A /* AxisTooltip */; };
 		58277E972BEBAA68000B6FEB /* String+Trim.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58277E962BEBAA68000B6FEB /* String+Trim.swift */; };
 		58277E992BEBDD00000B6FEB /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 58277E982BEBDD00000B6FEB /* PopupView */; };
 		583A786C2BDD5C4800435BC7 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 583A786B2BDD5C4800435BC7 /* LoginView.swift */; };
@@ -80,6 +90,15 @@
 		5813B9AE2BE2478B0078A3F9 /* VideoRecordOptionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordOptionListView.swift; sourceTree = "<group>"; };
 		5813B9B02BE267440078A3F9 /* RecordSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordSettingsViewModel.swift; sourceTree = "<group>"; };
 		5813B9B72BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InnerAIApp+AppDelegate.swift"; sourceTree = "<group>"; };
+		581A8DAD2C82627300C01E0A /* DMSans-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		581A8DAE2C82627300C01E0A /* DMSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Regular.ttf"; sourceTree = "<group>"; };
+		581A8DAF2C82627300C01E0A /* DMSans-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Black.ttf"; sourceTree = "<group>"; };
+		581A8DB12C82627300C01E0A /* DMSans-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Light.ttf"; sourceTree = "<group>"; };
+		581A8DB22C82627300C01E0A /* DMSans-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-ExtraLight.ttf"; sourceTree = "<group>"; };
+		581A8DB32C82627300C01E0A /* DMSans-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-ExtraBold.ttf"; sourceTree = "<group>"; };
+		581A8DB42C82627300C01E0A /* DMSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Medium.ttf"; sourceTree = "<group>"; };
+		581A8DB52C82627300C01E0A /* DMSans-Thin.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Thin.ttf"; sourceTree = "<group>"; };
+		581A8DB62C82627300C01E0A /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DMSans-Bold.ttf"; sourceTree = "<group>"; };
 		58277E962BEBAA68000B6FEB /* String+Trim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Trim.swift"; sourceTree = "<group>"; };
 		583A786B2BDD5C4800435BC7 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		584B29A02BE7B11900800135 /* FileUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUploader.swift; sourceTree = "<group>"; };
@@ -148,6 +167,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				581A8DCC2C832D4B00C01E0A /* AxisTooltip in Frameworks */,
 				5819B7732BFF400B006C5F12 /* raygun4apple in Frameworks */,
 				5819B7702BFF3300006C5F12 /* RollbarNotifier in Frameworks */,
 				58277E992BEBDD00000B6FEB /* PopupView in Frameworks */,
@@ -351,6 +371,15 @@
 		58D7CD8D2BDBAE9D00ADEDA4 /* InnerAI */ = {
 			isa = PBXGroup;
 			children = (
+				581A8DAF2C82627300C01E0A /* DMSans-Black.ttf */,
+				581A8DB62C82627300C01E0A /* DMSans-Bold.ttf */,
+				581A8DB32C82627300C01E0A /* DMSans-ExtraBold.ttf */,
+				581A8DB22C82627300C01E0A /* DMSans-ExtraLight.ttf */,
+				581A8DB12C82627300C01E0A /* DMSans-Light.ttf */,
+				581A8DB42C82627300C01E0A /* DMSans-Medium.ttf */,
+				581A8DAE2C82627300C01E0A /* DMSans-Regular.ttf */,
+				581A8DAD2C82627300C01E0A /* DMSans-SemiBold.ttf */,
+				581A8DB52C82627300C01E0A /* DMSans-Thin.ttf */,
 				5851B8432C6FB51E0016767F /* observer */,
 				58D96E802BFE5E9E000BD982 /* GoogleService-Info.plist */,
 				584B29BE2BE8DA4B00800135 /* configurator */,
@@ -418,6 +447,7 @@
 				58277E982BEBDD00000B6FEB /* PopupView */,
 				5819B76F2BFF3300006C5F12 /* RollbarNotifier */,
 				5819B7722BFF400B006C5F12 /* raygun4apple */,
+				581A8DCB2C832D4B00C01E0A /* AxisTooltip */,
 			);
 			productName = InnerAI;
 			productReference = 58D7CD8B2BDBAE9D00ADEDA4 /* Screen Recoder by Inner AI.app */;
@@ -451,6 +481,7 @@
 				586B3A422BDEBEEB006257DE /* XCRemoteSwiftPackageReference "PopupView" */,
 				5819B76E2BFF32FF006C5F12 /* XCRemoteSwiftPackageReference "rollbar-apple" */,
 				5819B7712BFF400B006C5F12 /* XCRemoteSwiftPackageReference "raygun4apple" */,
+				581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */,
 			);
 			productRefGroup = 58D7CD8C2BDBAE9D00ADEDA4 /* Products */;
 			projectDirPath = "";
@@ -466,6 +497,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				581A8DC12C82654E00C01E0A /* DMSans-Black.ttf in Resources */,
+				581A8DC22C82654E00C01E0A /* DMSans-Bold.ttf in Resources */,
+				581A8DC32C82654E00C01E0A /* DMSans-ExtraBold.ttf in Resources */,
+				581A8DC42C82654E00C01E0A /* DMSans-ExtraLight.ttf in Resources */,
+				581A8DC52C82654E00C01E0A /* DMSans-Light.ttf in Resources */,
+				581A8DC62C82654E00C01E0A /* DMSans-Medium.ttf in Resources */,
+				581A8DC72C82654E00C01E0A /* DMSans-Regular.ttf in Resources */,
+				581A8DC82C82654E00C01E0A /* DMSans-SemiBold.ttf in Resources */,
+				581A8DC92C82654E00C01E0A /* DMSans-Thin.ttf in Resources */,
 				58D7CD962BDBAEA100ADEDA4 /* Preview Assets.xcassets in Resources */,
 				58D96E812BFE5E9E000BD982 /* GoogleService-Info.plist in Resources */,
 				58D7CD932BDBAEA100ADEDA4 /* Assets.xcassets in Resources */,
@@ -769,6 +809,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jasudev/AxisTooltip.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.0;
+			};
+		};
 		586B3A422BDEBEEB006257DE /* XCRemoteSwiftPackageReference "PopupView" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/exyte/PopupView.git";
@@ -789,6 +837,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5819B7712BFF400B006C5F12 /* XCRemoteSwiftPackageReference "raygun4apple" */;
 			productName = raygun4apple;
+		};
+		581A8DCB2C832D4B00C01E0A /* AxisTooltip */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */;
+			productName = AxisTooltip;
 		};
 		58277E982BEBDD00000B6FEB /* PopupView */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -39,7 +39,6 @@ struct VideoView: View {
     @State private var screenRecordManager: ScreenRecordManager?
     @State private var restartPerformed: Bool = false
     @State private var displayingActionPopup: Bool = false
-    @State private var excludedWindows: [SCWindow] = []
 
     @ObservedObject var viewModel = ContentViewModel()
     @EnvironmentObject var appDelegate: AppDelegate
@@ -59,11 +58,11 @@ struct VideoView: View {
             }
             if recordConfig.settings.displayCamera {
                 if recordConfig.videoWindowType == .fullScreen {
-                    DraggableView(content: {
+                    /*DraggableView(content: {
                         CameraView(presentationStyle: .partial, viewModel: viewModel)
                     }, callback: { _ in
                         
-                    }, contentSize: CGSize(width: 190, height: 130), screenSize: screenSize).offset(y: -60)
+                    }, contentSize: CGSize(width: 190, height: 130), screenSize: screenSize).offset(y: -60)*/
                 }
             }
         }.onAppear {
@@ -165,12 +164,13 @@ extension VideoView {
                 appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .full, offset: CGSize.zero, screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
                 appDelegate.makeDefaultOverlayWindowsOnTop()
             }
-            // Move camera window to external display
-            WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
-                WindowInfo(windowTitle: "CameraWindow", appName: "Screen Recoder by Inner AI")
-            ], toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
+            moveCameraWindowToExternalIfNeeded()
             getCameraOnlyWindows()
         } else {
+            if recordConfig.settings.displayCamera {
+                appDelegate.showCameraWindow(viewModel: viewModel, presentationStyle: .partial, offset: .zero, screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
+                moveCameraWindowToExternalIfNeeded()
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 startRecording()
             }
@@ -185,6 +185,13 @@ extension VideoView {
             ]
             WindowUtil.moveWindowsToExternalDisplay(windowsInfo: windowsToMove, toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
         }
+    }
+    
+    private func moveCameraWindowToExternalIfNeeded() {
+        // Move camera window to external display
+        WindowUtil.moveWindowsToExternalDisplay(windowsInfo: [
+            WindowInfo(windowTitle: "CameraWindow", appName: "Screen Recoder by Inner AI")
+        ], toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
     }
     
     private func viewDidDisappear() {
@@ -206,6 +213,11 @@ extension VideoView {
                 DispatchQueue.main.async {
                     self.stopRecording()
                 }
+            }
+            // exclude record controls from recorded video output result
+            var excludedWindows: [SCWindow] = []
+            if let controlsWindow = (try await SCShareableContent.current.windows.first(where: { $0.title == "InnerAIRecordWindow"})) {
+                excludedWindows.append(controlsWindow)
             }
             try await screenRecordManager?.record(displayID: recordConfig.screenInfo?.displayID ?? CGMainDisplayID(), selectedWindow: selectedWindow, cameraWindow: cameraWindow, excludedWindows: excludedWindows)
         } catch {

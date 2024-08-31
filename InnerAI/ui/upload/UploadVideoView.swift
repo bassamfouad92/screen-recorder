@@ -11,15 +11,43 @@ struct UploadVideoView: View {
     
     @ObservedObject var viewModel: UploadViewModel
     @EnvironmentObject var appDelegate: AppDelegate
+    @State private var settingsViewType: SettingsViewType = .none
 
     var body: some View {
             
-            VStack(spacing: 20) {
-                Text("Uploading Video")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
+         VStack(spacing: 10) {
                 
-                    uploadStatusText
+                if viewModel.showErrorState {
+                    HStack {
+                        Image("logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .scaleEffect(0.3)
+                            .padding(.leading, 30)
+                        
+                        Button(action: {
+                            if settingsViewType == .quit {
+                                settingsViewType = .none
+                            } else {
+                                settingsViewType = .quit
+                            }
+                        }) {
+                            Image("menu_icon") // Example system image for menu button
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .aspectRatio(contentMode: .fill)
+                                .background(.clear)
+                        }.buttonStyle(PlainButtonStyle())
+                    }
+                }
+                
+                if !viewModel.showErrorState {
+                    Text("Uploading Video")
+                        .font(.custom("DMSans-Bold", size: 18))
+                        .foregroundColor(.black)
+                }
+                
+                uploadStatusText
                 
                 if viewModel.isLoading {
                     ProgressView()
@@ -31,7 +59,7 @@ struct UploadVideoView: View {
                 }
                 
                 if !viewModel.isLoading && !viewModel.showErrorState {
-                    CircularProgressWithText(progress: $viewModel.progressPercentage)
+                    CircularProgressWithText(progress: $viewModel.progressPercentage).padding(.top, 20)
                 }
                 
                 uploadCompletionText
@@ -41,43 +69,43 @@ struct UploadVideoView: View {
                         displayCancelUploadPopup()
                     }) {
                         Text("Cancel Upload")
-                            .font(.system(size: 12))
-                            .fontWeight(.semibold)
+                            .font(.custom("DMSans-Medium", size: 12))
                             .foregroundColor(.gray)
-                    }.buttonStyle(BorderlessButtonStyle())
+                    }.buttonStyle(BorderlessButtonStyle()).padding(.top, 20)
                 }
                 
                 if viewModel.showErrorState {
+                    
                     Image("sad-face")
                         .resizable()
-                        .frame(width: 80, height: 80) // Adjust size as needed
-                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 125, height: 102)
+                        .background(Color.clear)
+                        .padding(.leading, 40)
                     
-                    Text("Unable to upload, server not responding")
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.gray)
-                    
-                    Button(action: {
-                        viewModel.initUpload()
-                    }) {
-                        Text("Retry")
-                            .font(.system(size: 12))
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray)
-                    }.buttonStyle(BorderlessButtonStyle())
-                }
-                
-                if viewModel.showErrorState {
-                    Button(action: {
-                        appDelegate.displayRecordSettingsView()
-                    }) {
-                        Text("Create New Recording")
-                            .font(.system(size: 12))
-                            .fontWeight(.semibold)
-                            .foregroundColor(.purple)
-                    }.buttonStyle(BorderlessButtonStyle())
+                    VStack(spacing: 4) {
+                        Button(action: {
+                            viewModel.initUpload()
+                        }) {
+                            Text("Retry")
+                                .font(.custom("DMSans-Medium", size: 14))
+                                .foregroundColor(.appPurple)
+                                .underline()
+                        }.buttonStyle(BorderlessButtonStyle())
+                        
+                        Text("or")
+                            .font(.custom("DMSans-Medium", size: 14))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(Color(red: 59 / 255, green: 61 / 255, blue: 59 / 255))
+                        
+                        Button(action: {
+                            appDelegate.displayRecordSettingsView()
+                        }) {
+                            Text("Create New Recording")
+                                .font(.custom("DMSans-Medium", size: 14))
+                                .foregroundColor(.appPurple)
+                                .underline()
+                        }.buttonStyle(BorderlessButtonStyle())
+                    }.padding(.top, 20)
                 }
             }
             .onAppear {
@@ -92,7 +120,20 @@ struct UploadVideoView: View {
                     appDelegate.displayRecordSettingsView()
                 }
             })
-            .frame(width: 280, height: 320)
+            .popover(isPresented: .constant(settingsViewType != .none), attachmentAnchor: popoverArrowAlignment(), arrowEdge: .leading) {
+                VStack {
+                    switch settingsViewType {
+                    case .quit:
+                        QuitAndLogoutView(onLogout: {
+                            UserSessionManager.logout()
+                            appDelegate.hideWindow()
+                            appDelegate.displayLoginView()
+                        })
+                    default:
+                        EmptyView()
+                    }}
+            }
+            .frame(width: 271, height: 387)
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 10)
@@ -118,24 +159,57 @@ struct UploadVideoView: View {
         }
     }
     
-    private var uploadStatusText: some View {
-            Text("We are uploading your recording to Inner AI's Library.")
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-                .multilineTextAlignment(.center)
-                .font(.system(size: 14))
-                .fontWeight(.light)
-                .foregroundColor(.gray)
+    func popoverArrowAlignment() -> PopoverAttachmentAnchor {
+        switch settingsViewType {
+        case .quit:
+            return .rect(.rect(CGRect(x: 271 - 50.0, y: -24, width: 100, height: 100)))
+        default:
+            return .rect(.rect(CGRect(x: 0, y: 20, width: 100, height: 600)))
         }
+    }
+    
+    private var uploadStatusText: some View {
+        Group {
+            if viewModel.showErrorState {
+                VStack {
+                    Text("Oops!\nSomething went wrong")
+                        .font(.custom("DMSans-Bold", size: 14))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(Color(red: 59 / 255, green: 61 / 255, blue: 59 / 255))
+                }
+            } else {
+                Text("We are uploading your\nrecording to Inner AI's Library.")
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.center)
+                    .font(.custom("DMSans-Light", size: 14))
+                    .foregroundColor(Color(red: 59 / 255, green: 61 / 255, blue: 59 / 255))
+            }
+        }
+    }
         
     private var uploadCompletionText: some View {
-        Text("Your video will be ready in moments.")
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-            .multilineTextAlignment(.center)
-            .font(.system(size: 14))
-            .fontWeight(.light)
-            .foregroundColor(.gray)
+        Group {
+            if viewModel.showErrorState {
+                VStack {
+                    Text("Click below to try uploading again or\nstart a new recording.")
+                        .font(.custom("DMSans-Medium", size: 14))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundColor(Color(red: 59 / 255, green: 61 / 255, blue: 59 / 255))
+                        .padding(.top, 10)
+                }
+            } else {
+                Text("Your video will be ready\nin moments.")
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.center)
+                    .font(.custom("DMSans-Light", size: 14))
+                    .foregroundColor(Color(red: 59 / 255, green: 61 / 255, blue: 59 / 255))
+                    .padding(.top, 10)
+            }
+        }
     }
     
     private func displayCancelUploadPopup() {

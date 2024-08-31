@@ -18,10 +18,18 @@ struct CameraPreviewOverlayView: View {
     var body: some View {
         ZStack {
             if presentationStyle == .partial {
-                DraggableView(content: {
-                    CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
-                }, callback: { _ in
-                }, contentSize: CGSize(width: 190, height: 130), specificWindowSize: offset, screenSize: screenSize).offset(x: offset.width, y: offset.height)
+                if offset != .zero {
+                    DraggableView(content: {
+                        CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
+                    }, callback: { _ in
+                    }, contentSize: CGSize(width: 190, height: 130), specificWindowSize: offset, screenSize: screenSize).offset(x: offset.width, y: offset.height)
+                } else {
+                    DraggableView(content: {
+                        CameraView(presentationStyle: .partial, viewModel: viewModel)
+                    }, callback: { _ in
+                        
+                    }, contentSize: CGSize(width: 190, height: 130), screenSize: screenSize).offset(y: -60)
+                }
             } else {
                 CameraView(presentationStyle: presentationStyle, viewModel: viewModel)
             }
@@ -29,7 +37,7 @@ struct CameraPreviewOverlayView: View {
         .onAppear {
             viewModel.checkAuthorization()
         }
-        .frame(width: screenSize.width, height: screenSize.height, alignment: .topLeading)
+        .frame(width: screenSize.width, height: screenSize.height, alignment: offset != .zero ? .topLeading : .bottomLeading)
         .background(.clear)
     }
 }

@@ -60,7 +60,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
     var adjustedBufferTime: CMTime = .zero
     var fileURL: URL?
 
-    let excludedWindows = ["", "com.apple.dock", "com.apple.controlcenter", "com.apple.notificationcenterui", "com.apple.systemuiserver", "com.apple.WindowManager", "dev.mnpn.Azayaka", "com.gaosun.eul", "com.pointum.hazeover", "net.matthewpalmer.Vanilla", "com.dwarvesv.minimalbar", "com.bjango.istatmenus.status"]
+    /*let excludedWindows = ["", "com.apple.dock", "com.apple.controlcenter", "com.apple.notificationcenterui", "com.apple.systemuiserver", "com.apple.WindowManager", "dev.mnpn.Azayaka", "com.gaosun.eul", "com.pointum.hazeover", "net.matthewpalmer.Vanilla", "com.dwarvesv.minimalbar", "com.bjango.istatmenus.status"]*/
     
     var onStopStream: (_ stream: SCStream) -> Void = { stream in }
     var isStreamStopped = false
@@ -126,8 +126,7 @@ class ScreenRecordManager: NSObject, SCStreamDelegate, SCStreamOutput {
         guard let display = sharableContent.displays.first(where: { $0.displayID == displayID }) else {
             throw RecordingError("Can't find display with ID \(displayID) in sharable content")
         }
-        let filter = SCContentFilter(display: display, excludingWindows: excludedWindows ?? [])
-        //stream = SCStream(filter: SCContentFilter(desktopIndependentWindow:             sharableContent.windows.first(where: {$0.windowID == 60})!), configuration: conf, delegate: self)
+        let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: excludedWindows ?? [])
         if let choosed = selectedWindow {
            var includings: [SCWindow] = [choosed]
             if let cameraWindow = cameraWindow {
