@@ -1,4 +1,5 @@
 {
+  "originHash" : "f0175c9969b18207f8473e88a83d623e76f9c24b3eb29549409c5ef88e0a3f18",
   "pins" : [
     {
       "identity" : "axistooltip",
@@ -7,15 +8,6 @@
       "state" : {
         "revision" : "ed9f7acbbd54dc3ab70585c0cd006974b532e998",
         "version" : "0.5.0"
-      }
-    },
-    {
-      "identity" : "cocoalumberjack",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
-      "state" : {
-        "revision" : "4b8714a7fb84d42393314ce897127b3939885ec3",
-        "version" : "3.8.5"
       }
     },
     {
@@ -28,33 +20,6 @@
       }
     },
     {
-      "identity" : "raygun4apple",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/MindscapeHQ/raygun4apple.git",
-      "state" : {
-        "revision" : "6f629551d81bebc5985b2529d649897511a58e42",
-        "version" : "2.0.0"
-      }
-    },
-    {
-      "identity" : "rollbar-apple",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/rollbar/rollbar-apple",
-      "state" : {
-        "revision" : "2dce6849ca1ecb2154578eed87c48709edd502ff",
-        "version" : "3.3.0"
-      }
-    },
-    {
-      "identity" : "swift-log",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-log",
-      "state" : {
-        "revision" : "e97a6fcb1ab07462881ac165fdbb37f067e205d5",
-        "version" : "1.5.4"
-      }
-    },
-    {
       "identity" : "swiftui-introspect",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/siteline/swiftui-introspect",
@@ -64,5 +29,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

@@ -11,8 +11,6 @@
 		5813B9AF2BE2478B0078A3F9 /* VideoRecordOptionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5813B9AE2BE2478B0078A3F9 /* VideoRecordOptionListView.swift */; };
 		5813B9B12BE267440078A3F9 /* RecordSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5813B9B02BE267440078A3F9 /* RecordSettingsViewModel.swift */; };
 		5813B9B82BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5813B9B72BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift */; };
-		5819B7702BFF3300006C5F12 /* RollbarNotifier in Frameworks */ = {isa = PBXBuildFile; productRef = 5819B76F2BFF3300006C5F12 /* RollbarNotifier */; };
-		5819B7732BFF400B006C5F12 /* raygun4apple in Frameworks */ = {isa = PBXBuildFile; productRef = 5819B7722BFF400B006C5F12 /* raygun4apple */; };
 		581A8DC12C82654E00C01E0A /* DMSans-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DAF2C82627300C01E0A /* DMSans-Black.ttf */; };
 		581A8DC22C82654E00C01E0A /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB62C82627300C01E0A /* DMSans-Bold.ttf */; };
 		581A8DC32C82654E00C01E0A /* DMSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 581A8DB32C82627300C01E0A /* DMSans-ExtraBold.ttf */; };
@@ -51,6 +49,7 @@
 		585F09D62C6D0D6500300D23 /* SelectScreenPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 585F09D52C6D0D6500300D23 /* SelectScreenPopupView.swift */; };
 		586B3A412BDEA716006257DE /* ScreenRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586B3A402BDEA716006257DE /* ScreenRecorder.swift */; };
 		586B3A442BDEBEEB006257DE /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = 586B3A432BDEBEEB006257DE /* PopupView */; };
+		5881EF102ECA25830021587C /* RecordingScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5881EF0F2ECA25750021587C /* RecordingScreenViewModel.swift */; };
 		588D2E8E2BE648E400EAD235 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E8D2BE648E400EAD235 /* PlayerView.swift */; };
 		588D2E902BE6495200EAD235 /* PlayerContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E8F2BE6495200EAD235 /* PlayerContainerView.swift */; };
 		588D2E922BE6499200EAD235 /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E912BE6499200EAD235 /* ContentViewModel.swift */; };
@@ -63,7 +62,7 @@
 		589D47512BE2DBB200D7DE07 /* WindowInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D47502BE2DBB200D7DE07 /* WindowInfo.swift */; };
 		589D475C2BE408E900D7DE07 /* DraggableNSPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D475B2BE408E900D7DE07 /* DraggableNSPanel.swift */; };
 		589D475E2BE40A5800D7DE07 /* ControlPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D475D2BE40A5800D7DE07 /* ControlPanelView.swift */; };
-		589D47602BE40AE400D7DE07 /* VideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D475F2BE40AE400D7DE07 /* VideoView.swift */; };
+		589D47602BE40AE400D7DE07 /* RecordingScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D475F2BE40AE400D7DE07 /* RecordingScreenView.swift */; };
 		589D47672BE51A8E00D7DE07 /* RPScreenWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D47662BE51A8E00D7DE07 /* RPScreenWriter.swift */; };
 		589D476A2BE5315F00D7DE07 /* ScreenRecordManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D47692BE5315F00D7DE07 /* ScreenRecordManager.swift */; };
 		589D476C2BE532B300D7DE07 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589D476B2BE532B300D7DE07 /* Types.swift */; };
@@ -125,6 +124,7 @@
 		585F09D22C6CE04900300D23 /* DeviceObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceObserver.swift; sourceTree = "<group>"; };
 		585F09D52C6D0D6500300D23 /* SelectScreenPopupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectScreenPopupView.swift; sourceTree = "<group>"; };
 		586B3A402BDEA716006257DE /* ScreenRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecorder.swift; sourceTree = "<group>"; };
+		5881EF0F2ECA25750021587C /* RecordingScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingScreenViewModel.swift; sourceTree = "<group>"; };
 		588D2E8D2BE648E400EAD235 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		588D2E8F2BE6495200EAD235 /* PlayerContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerContainerView.swift; sourceTree = "<group>"; };
 		588D2E912BE6499200EAD235 /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
@@ -138,7 +138,7 @@
 		589D47582BE402E400D7DE07 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		589D475B2BE408E900D7DE07 /* DraggableNSPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraggableNSPanel.swift; sourceTree = "<group>"; };
 		589D475D2BE40A5800D7DE07 /* ControlPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlPanelView.swift; sourceTree = "<group>"; };
-		589D475F2BE40AE400D7DE07 /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
+		589D475F2BE40AE400D7DE07 /* RecordingScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingScreenView.swift; sourceTree = "<group>"; };
 		589D47662BE51A8E00D7DE07 /* RPScreenWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPScreenWriter.swift; sourceTree = "<group>"; };
 		589D47692BE5315F00D7DE07 /* ScreenRecordManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecordManager.swift; sourceTree = "<group>"; };
 		589D476B2BE532B300D7DE07 /* Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
@@ -168,8 +168,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				581A8DCC2C832D4B00C01E0A /* AxisTooltip in Frameworks */,
-				5819B7732BFF400B006C5F12 /* raygun4apple in Frameworks */,
-				5819B7702BFF3300006C5F12 /* RollbarNotifier in Frameworks */,
 				58277E992BEBDD00000B6FEB /* PopupView in Frameworks */,
 				586B3A442BDEBEEB006257DE /* PopupView in Frameworks */,
 			);
@@ -208,6 +206,7 @@
 		5813B9B22BE2674F0078A3F9 /* viewmodel */ = {
 			isa = PBXGroup;
 			children = (
+				5881EF0F2ECA25750021587C /* RecordingScreenViewModel.swift */,
 				5813B9B02BE267440078A3F9 /* RecordSettingsViewModel.swift */,
 				584B29A92BE7ED2900800135 /* UploadViewModel.swift */,
 				584B29BC2BE8D3C800800135 /* LoginViewModel.swift */,
@@ -318,7 +317,7 @@
 			isa = PBXGroup;
 			children = (
 				5813B9AE2BE2478B0078A3F9 /* VideoRecordOptionListView.swift */,
-				589D475F2BE40AE400D7DE07 /* VideoView.swift */,
+				589D475F2BE40AE400D7DE07 /* RecordingScreenView.swift */,
 			);
 			path = video;
 			sourceTree = "<group>";
@@ -445,8 +444,6 @@
 			packageProductDependencies = (
 				586B3A432BDEBEEB006257DE /* PopupView */,
 				58277E982BEBDD00000B6FEB /* PopupView */,
-				5819B76F2BFF3300006C5F12 /* RollbarNotifier */,
-				5819B7722BFF400B006C5F12 /* raygun4apple */,
 				581A8DCB2C832D4B00C01E0A /* AxisTooltip */,
 			);
 			productName = InnerAI;
@@ -479,8 +476,6 @@
 			mainGroup = 58D7CD822BDBAE9D00ADEDA4;
 			packageReferences = (
 				586B3A422BDEBEEB006257DE /* XCRemoteSwiftPackageReference "PopupView" */,
-				5819B76E2BFF32FF006C5F12 /* XCRemoteSwiftPackageReference "rollbar-apple" */,
-				5819B7712BFF400B006C5F12 /* XCRemoteSwiftPackageReference "raygun4apple" */,
 				581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */,
 			);
 			productRefGroup = 58D7CD8C2BDBAE9D00ADEDA4 /* Products */;
@@ -557,10 +552,11 @@
 				58D7CD8F2BDBAE9D00ADEDA4 /* InnerAIApp.swift in Sources */,
 				5813B9AF2BE2478B0078A3F9 /* VideoRecordOptionListView.swift in Sources */,
 				584B29C42BE8F1EF00800135 /* FileInfo.swift in Sources */,
+				5881EF102ECA25830021587C /* RecordingScreenViewModel.swift in Sources */,
 				5813B9B82BE2CE440078A3F9 /* InnerAIApp+AppDelegate.swift in Sources */,
 				586B3A412BDEA716006257DE /* ScreenRecorder.swift in Sources */,
 				65B470812C05741100E931FE /* RecordSettingsView.swift in Sources */,
-				589D47602BE40AE400D7DE07 /* VideoView.swift in Sources */,
+				589D47602BE40AE400D7DE07 /* RecordingScreenView.swift in Sources */,
 				5851B8452C6FB5450016767F /* ScreenObserver.swift in Sources */,
 				588F1EED2BE6DA4700AFE829 /* CameraOptionListView.swift in Sources */,
 				588D2E942BE64BBA00EAD235 /* CameraView.swift in Sources */,
@@ -714,7 +710,7 @@
 				CURRENT_PROJECT_VERSION = 19;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = P4Q25994Q5;
+				DEVELOPMENT_TEAM = 52RHAU9T7H;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -747,7 +743,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_ASSET_PATHS = "\"InnerAI/Preview Content\"";
-				DEVELOPMENT_TEAM = P4Q25994Q5;
+				DEVELOPMENT_TEAM = 52RHAU9T7H;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -793,22 +789,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		5819B76E2BFF32FF006C5F12 /* XCRemoteSwiftPackageReference "rollbar-apple" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rollbar/rollbar-apple";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.3.0;
-			};
-		};
-		5819B7712BFF400B006C5F12 /* XCRemoteSwiftPackageReference "raygun4apple" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/MindscapeHQ/raygun4apple.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
 		581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jasudev/AxisTooltip.git";
@@ -828,16 +808,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5819B76F2BFF3300006C5F12 /* RollbarNotifier */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5819B76E2BFF32FF006C5F12 /* XCRemoteSwiftPackageReference "rollbar-apple" */;
-			productName = RollbarNotifier;
-		};
-		5819B7722BFF400B006C5F12 /* raygun4apple */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5819B7712BFF400B006C5F12 /* XCRemoteSwiftPackageReference "raygun4apple" */;
-			productName = raygun4apple;
-		};
 		581A8DCB2C832D4B00C01E0A /* AxisTooltip */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 581A8DCA2C832D4B00C01E0A /* XCRemoteSwiftPackageReference "AxisTooltip" */;

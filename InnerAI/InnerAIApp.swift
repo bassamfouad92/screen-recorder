@@ -7,8 +7,6 @@
 
 import SwiftUI
 import AVFoundation
-import RollbarNotifier
-import raygun4apple
 import Combine
 
 @main
@@ -51,8 +49,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     @MainActor func applicationDidFinishLaunching(_ notification: Notification) {
         registerFonts()
-        configureRayGun()
-        configureRollBar()
         configureOverlayWindow()
         configureCustomWindowPopup()
         configureCameraWindow()
@@ -81,24 +77,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             self.hidePopOver()
         }
     }
-
-    
-        
-    func configureRollBar() {
-        let config = RollbarConfig.mutableConfig(withAccessToken: "aa8b8b3e2e7e44148ca6e897ab5293e7")
-            config.loggingOptions.logLevel = .error
-            config.loggingOptions.crashLevel = .critical
-            config.telemetry.captureLog = true
-            Rollbar.initWithConfiguration(config)
-    }
-    
-    func configureRayGun() {
-        let raygunClient = RaygunClient.sharedInstance(apiKey: "Z4RluGeas5hPY17uTjkfWQ")
-        raygunClient.enableCrashReporting()
-    }
     
     func initialView() -> any View {
-        return UserSessionManager.isUserLoggedIn() ? recordSettingView : loginView
+        //return UserSessionManager.isUserLoggedIn() ? recordSettingView : loginView
+        return recordSettingView
     }
     
     func configureStatusItem() {
@@ -284,7 +266,7 @@ extension AppDelegate {
             self.hidePopOver()
         }
         
-        let rootView: VideoView
+        let rootView: RecordingScreenView
         var windowFrame: CGRect = .zero
         var newConfig = config
         
@@ -313,7 +295,7 @@ extension AppDelegate {
             }
         }
         
-        rootView = VideoView(screenSize: windowFrame, recordConfig: newConfig, onStateChanged: callback)
+        rootView = RecordingScreenView(screenSize: windowFrame, recordConfig: newConfig, viewModel: RecordingScreenViewModel(contentViewModel: ContentViewModel()), onStateChanged: callback)
         self.window?.contentView = NSHostingView(rootView: rootView.environmentObject(self))
         showWindow()
     }
