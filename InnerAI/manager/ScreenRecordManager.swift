@@ -17,8 +17,8 @@ class ScreenRecordManager: NSObject, ObservableObject {
     }
     
     // MARK: - Properties
-    var pipeline: SCKScreenRecordingPipeline?
-    var writer: SCKRecordingFileWriter?
+    var pipeline: (any ScreenRecordingPipeline)?
+    var writer: (any RecordingFileWriter)?
     private var cancellables = Set<AnyCancellable>()
     
     var startTime: Date?
@@ -133,8 +133,6 @@ class ScreenRecordManager: NSObject, ObservableObject {
         }
         return 1
     }
-    
-
     
     // Legacy helpers if needed by UI
     func getRecordingLength() -> String {
