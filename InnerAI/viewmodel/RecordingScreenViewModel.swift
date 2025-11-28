@@ -26,7 +26,7 @@ class RecordingScreenViewModel: ObservableObject {
     @Published var recordingState: RecordingState = .inProgress
 
     /// View sends actions into this subject
-    let actionSubject = PassthroughSubject<RecordingAction, Never>()
+    let actionSubject = PassthroughSubject<RecordAction, Never>()
     private var cancellables = Set<AnyCancellable>()
 
     /// External state from parent
@@ -38,7 +38,6 @@ class RecordingScreenViewModel: ObservableObject {
         self.contentViewModel = contentViewModel
         bindActions()
     }
-
 
     private func bindActions() {
         actionSubject
@@ -53,7 +52,7 @@ class RecordingScreenViewModel: ObservableObject {
     }
 
     @MainActor
-    private func handle(action: RecordingAction) {
+    private func handle(action: RecordAction) {
         switch action {
         case .stop:
             stopRecording()
