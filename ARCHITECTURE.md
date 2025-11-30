@@ -235,47 +235,35 @@ graph LR
 
 ```mermaid
 sequenceDiagram
-    participant V as RecordingScreenView
-    participant VM as RecordingScreenViewModel
-    participant M as ScreenRecordManager
+    participant V as View
+    participant VM as ViewModel
+    participant M as Manager
     participant BA as BufferAdjuster
-    participant P as SCKScreenRecordingPipeline
-    participant W as SCKRecordingFileWriter
+    participant P as Pipeline
+    participant W as Writer
     
     Note over V,W: Pause Flow
-    
     V->>VM: sendAction(.pause)
     VM->>M: actionInput.send(.pause)
     M->>P: actionInput.send(.pause)
-    Note over P: Logs pause (no state change)
     M->>BA: pause()
-    Note over BA: isPaused = true
     
     Note over P,W: Buffers Continue Flowing
-    
     P->>M: processedBuffers.send(buffer)
     M->>BA: adjust(buffer)
-    Note over BA: Mark pauseStartPTS, Return nil
-    Note over M: compactMap drops nil
-    Note over W: Writer NOT called
+    BA-->>M: nil (dropped by compactMap)
     
     Note over V,W: Resume Flow
-    
     V->>VM: sendAction(.resume)
     VM->>M: actionInput.send(.resume)
     M->>P: actionInput.send(.resume)
-    Note over P: Logs resume (no state change)
     M->>BA: resume()
-    Note over BA: isPaused = false
     
     Note over P,W: Buffers Resume Processing
-    
     P->>M: processedBuffers.send(buffer)
     M->>BA: adjust(buffer)
-    Note over BA: Calculate pause duration, Adjust PTS
-    BA->>M: Return adjusted buffer
+    BA-->>M: adjusted buffer
     M->>W: write(adjusted)
-    W->>W: Append to file
 ```
 
 ## Buffer Flow Architecture with Pause/Resume
