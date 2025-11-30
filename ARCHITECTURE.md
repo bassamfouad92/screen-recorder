@@ -249,13 +249,13 @@ sequenceDiagram
     M->>P: actionInput.send(.pause)
     Note over P: Logs pause (no state change)
     M->>BA: pause()
-    BA->>BA: isPaused = true<br/>pauseStartPTS = nil
+    Note over BA: isPaused = true
     
     Note over P,W: Buffers Continue Flowing
     
     P->>M: processedBuffers.send(buffer)
     M->>BA: adjust(buffer)
-    BA->>BA: Mark pauseStartPTS<br/>Return nil
+    Note over BA: Mark pauseStartPTS, Return nil
     Note over M: compactMap drops nil
     Note over W: Writer NOT called
     
@@ -266,13 +266,14 @@ sequenceDiagram
     M->>P: actionInput.send(.resume)
     Note over P: Logs resume (no state change)
     M->>BA: resume()
-    BA->>BA: isPaused = false<br/>totalPauseDuration = .zero
+    Note over BA: isPaused = false
     
     Note over P,W: Buffers Resume Processing
     
     P->>M: processedBuffers.send(buffer)
     M->>BA: adjust(buffer)
-    BA->>BA: Calculate pause duration<br/>Adjust PTS<br/>Return adjusted buffer
+    Note over BA: Calculate pause duration, Adjust PTS
+    BA->>M: Return adjusted buffer
     M->>W: write(adjusted)
     W->>W: Append to file
 ```
