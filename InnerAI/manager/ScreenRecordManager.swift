@@ -10,51 +10,130 @@ import ScreenCaptureKit
 import AVFoundation
 import Combine
 
-class ScreenRecordManager: NSObject, ObservableObject {
+struct RecordingConfiguration {
+    let audioDeviceId: UInt32
+    let recordMic: Bool
+    let audioDeviceTransportType: AudioDeviceTransportType
+    let mode: RecordMode
+    let videoFormat: VideoFormat
+}
+
+enum RecordingEvent {
+    case started
+    case stopped(URL)
+    case error(RecordingError)
+}
+
+class ScreenRecordManager: NSObject {
     
     deinit {
         print("ScreenRecordManager deinit")
     }
     
+    // MARK: - Publishers
+    let actionInput = PassthroughSubject<RecordAction, Never>()
+    private let eventSubject = PassthroughSubject<RecordingEvent, Never>()
+    var events: AnyPublisher<RecordingEvent, Never> {
+        eventSubject.eraseToAnyPublisher()
+    }
+    
     // MARK: - Properties
-    var pipeline: (any ScreenRecordingPipeline)?
-    var writer: (any RecordingFileWriter)?
+    private var pipeline: (any ScreenRecordingPipeline)?
+    private var writer: (any RecordingFileWriter)?
     private var cancellables = Set<AnyCancellable>()
     
-    var startTime: Date?
-    var filePath: String!
-    var fileURL: URL?
+    private(set) var startTime: Date?
+    private(set) var filePath: String?
+    private(set) var fileURL: URL?
     
-    var recordMic = true
-    var audioDeviceId: UInt32 = 0
-    var audioDeviceTransportType: AudioDeviceTransportType = .builtIn
+    private let configuration: RecordingConfiguration
     
-    var isPause: Bool = false {
-        didSet {
-            DebugLogger.log(.action, isPause ? "⏸️ PAUSE requested" : "▶️ RESUME requested")
-            if isPause {
-                pipeline?.actionInput.send(.pause)
-                Task { await writer?.pause() }
-            } else {
-                pipeline?.actionInput.send(.resume)
-                Task { await writer?.resume() }
+    // MARK: - Init
+    init(configuration: RecordingConfiguration) {
+        self.configuration = configuration
+        super.init()
+        bindActions()
+    }
+    
+    // MARK: - Private Methods
+    
+    private func bindActions() {
+        actionInput
+            .sink { [weak self] action in
+                self?.handleAction(action)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleAction(_ action: RecordAction) {
+        Task {
+            switch action {
+            case .start:
+                break // Already started in record()
+            case .pause:
+                await handlePause()
+            case .resume:
+                await handleResume()
+            case .stop:
+                await handleStop()
+            case .restart:
+                await handleRestart()
+            case .delete:
+                await handleDelete()
             }
         }
     }
     
-    var onStopStream: (_ stream: SCStream?) -> Void = { _ in }
+    private func handlePause() async {
+        DebugLogger.log(.action, "⏸️ PAUSE requested")
+        pipeline?.actionInput.send(.pause)
+        await writer?.pause()
+    }
     
-    // Configuration
-    private var mode: RecordMode = .h264_sRGB
-    private var videoFormat: VideoFormat = .mp4
+    private func handleResume() async {
+        DebugLogger.log(.action, "▶️ RESUME requested")
+        pipeline?.actionInput.send(.resume)
+        await writer?.resume()
+    }
     
-    // MARK: - Methods
+    private func handleStop() async {
+        do {
+            try await stopRecording()
+        } catch {
+            DebugLogger.log(.error, "Failed to stop recording: \(error)")
+            eventSubject.send(.error(.captureStopFailed(error.localizedDescription)))
+        }
+    }
     
-    func record(displayID: CGDirectDisplayID, selectedWindow: SCWindow?, cameraWindow: SCWindow?, excludedWindows: [SCWindow]? = []) async throws {
+    private func handleRestart() async {
+        await handleStop()
+        // Restart logic should be handled by ViewModel
+    }
+    
+    private func handleDelete() async {
+        if let filePath = filePath {
+            RecordFileManager.shared.deleteFile(atPath: filePath)
+        }
+        await handleStop()
+    }
+    
+    // MARK: - Public Methods
+    
+    func record(
+        displayID: CGDirectDisplayID,
+        selectedWindow: WindowReference?,
+        cameraWindow: WindowReference?,
+        excludedWindows: [WindowReference]? = []
+    ) async throws {
         DebugLogger.log(.info, "🎬 Initializing recording...")
         
+        // Convert WindowReference to SCWindow
+        let scSelectedWindow = selectedWindow?.asSCWindow
+        let scCameraWindow = cameraWindow?.asSCWindow
+        let scExcludedWindows = excludedWindows?.compactMap { $0.asSCWindow } ?? []
+        
         // 1. Prepare File URL
-        let fileExtension = videoFormat == .mp4 ? "mp4" : "mov"
+        let fileExtension = configuration.videoFormat == .mp4 ? "mp4" : "mov"
         let url = try RecordFileManager.shared.makeVideoFileURL(extension: fileExtension)
         self.fileURL = url
         self.filePath = url.path
@@ -68,9 +147,9 @@ class ScreenRecordManager: NSObject, ObservableObject {
             url: url,
             displaySize: displaySize,
             scaleFactor: displayScaleFactor,
-            mode: mode,
-            videoFormat: videoFormat,
-            recordMic: recordMic
+            mode: configuration.mode,
+            videoFormat: configuration.videoFormat,
+            recordMic: configuration.recordMic
         )
         
         // 3. Initialize Writer
@@ -80,13 +159,13 @@ class ScreenRecordManager: NSObject, ObservableObject {
         
         // 4. Initialize Pipeline
         let pipeline = SCKScreenRecordingPipeline(
-            selectedWindow: selectedWindow,
-            cameraWindow: cameraWindow,
-            excludedWindows: excludedWindows ?? [],
+            selectedWindow: scSelectedWindow,
+            cameraWindow: scCameraWindow,
+            excludedWindows: scExcludedWindows,
             displayID: displayID,
-            mode: mode,
-            audioDeviceId: audioDeviceId,
-            isBluetooth: audioDeviceTransportType == .bluetooth
+            mode: configuration.mode,
+            audioDeviceId: configuration.audioDeviceId,
+            isBluetooth: configuration.audioDeviceTransportType == .bluetooth
         )
         self.pipeline = pipeline
         DebugLogger.log(.info, "⚡️ Pipeline initialized")
@@ -102,7 +181,7 @@ class ScreenRecordManager: NSObject, ObservableObject {
         pipeline.errorPublisher
             .sink { [weak self] error in
                 DebugLogger.log(.error, "Pipeline error: \(error)")
-                self?.onStopStream(nil)
+                self?.eventSubject.send(.error(error))
             }
             .store(in: &cancellables)
         
@@ -113,12 +192,17 @@ class ScreenRecordManager: NSObject, ObservableObject {
         DebugLogger.log(.action, "▶️ START requested")
         startTime = Date()
         pipeline?.actionInput.send(.start)
+        eventSubject.send(.started)
     }
     
-    func stopRecording() async throws {
+    private func stopRecording() async throws {
         DebugLogger.log(.action, "⏹️ STOP requested")
         pipeline?.actionInput.send(.stop)
-        _ = try await writer?.finish()
+        
+        if let url = try await writer?.finish() {
+            eventSubject.send(.stopped(url))
+        }
+        
         pipeline = nil
         writer = nil
         cancellables.removeAll()

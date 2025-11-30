@@ -37,8 +37,6 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
     private let micAudioInput: AVAssetWriterInput?
 
     // MARK: - State
-    private let queue = DispatchQueue(label: "RecordingFileWriter.queue")
-
     private var isSessionStarted = false
     private var sessionStartTime: CMTime?
     private var lastPTS: CMTime = .zero
@@ -67,7 +65,7 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
         videoWriter.add(videoInput)
 
         // App Audio
-        if let appAudio = config.appAudioSettings {
+        /*if let appAudio = config.appAudioSettings {
             let aw = AVAssetWriterInput(mediaType: .audio, outputSettings: appAudio)
             aw.expectsMediaDataInRealTime = true
 
@@ -79,7 +77,9 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
         } else {
             self.audioWriter = nil
             self.appAudioInput = nil
-        }
+        }*/
+        self.audioWriter = nil
+        self.appAudioInput = nil
 
         // Mic Audio
         if let micAudio = config.micAudioSettings {

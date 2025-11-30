@@ -59,8 +59,11 @@
 		5881EF102ECA25830021587C /* RecordingScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5881EF0F2ECA25750021587C /* RecordingScreenViewModel.swift */; };
 		588D2E8E2BE648E400EAD235 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E8D2BE648E400EAD235 /* PlayerView.swift */; };
 		588D2E902BE6495200EAD235 /* PlayerContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E8F2BE6495200EAD235 /* PlayerContainerView.swift */; };
-		588D2E922BE6499200EAD235 /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E912BE6499200EAD235 /* ContentViewModel.swift */; };
 		588D2E942BE64BBA00EAD235 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588D2E932BE64BBA00EAD235 /* CameraView.swift */; };
+		588E928E2EDC527800A193CC /* WindowReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588E928D2EDC527800A193CC /* WindowReference.swift */; };
+		588E92902EDC52E100A193CC /* CameraCaptureProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588E928F2EDC52E100A193CC /* CameraCaptureProvider.swift */; };
+		588E92922EDC52EF00A193CC /* CameraCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588E92912EDC52EF00A193CC /* CameraCaptureService.swift */; };
+		588E92942EDC530000A193CC /* WindowContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588E92932EDC530000A193CC /* WindowContentService.swift */; };
 		588F1EE92BE6974E00AFE829 /* DraggableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588F1EE82BE6974E00AFE829 /* DraggableView.swift */; };
 		588F1EEB2BE6A6F400AFE829 /* AVCaptureDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588F1EEA2BE6A6F400AFE829 /* AVCaptureDeviceManager.swift */; };
 		588F1EED2BE6DA4700AFE829 /* CameraOptionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588F1EEC2BE6DA4700AFE829 /* CameraOptionListView.swift */; };
@@ -146,8 +149,11 @@
 		5881EF0F2ECA25750021587C /* RecordingScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingScreenViewModel.swift; sourceTree = "<group>"; };
 		588D2E8D2BE648E400EAD235 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		588D2E8F2BE6495200EAD235 /* PlayerContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerContainerView.swift; sourceTree = "<group>"; };
-		588D2E912BE6499200EAD235 /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
 		588D2E932BE64BBA00EAD235 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		588E928D2EDC527800A193CC /* WindowReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowReference.swift; sourceTree = "<group>"; };
+		588E928F2EDC52E100A193CC /* CameraCaptureProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureProvider.swift; sourceTree = "<group>"; };
+		588E92912EDC52EF00A193CC /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureService.swift; sourceTree = "<group>"; };
+		588E92932EDC530000A193CC /* WindowContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowContentService.swift; sourceTree = "<group>"; };
 		588F1EE82BE6974E00AFE829 /* DraggableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraggableView.swift; sourceTree = "<group>"; };
 		588F1EEA2BE6A6F400AFE829 /* AVCaptureDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVCaptureDeviceManager.swift; sourceTree = "<group>"; };
 		588F1EEC2BE6DA4700AFE829 /* CameraOptionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraOptionListView.swift; sourceTree = "<group>"; };
@@ -228,6 +234,7 @@
 		5813B9AB2BE16D670078A3F9 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				588E928D2EDC527800A193CC /* WindowReference.swift */,
 				5836F6CE2ED35A60001B683E /* WriterConfig.swift */,
 				5836F6CA2ED355B7001B683E /* RecordingBuffer.swift */,
 				5813B9AC2BE16D7C0078A3F9 /* Settings.swift */,
@@ -310,6 +317,9 @@
 		584B29B92BE8CE0100800135 /* service */ = {
 			isa = PBXGroup;
 			children = (
+				588E92932EDC530000A193CC /* WindowContentService.swift */,
+				588E928F2EDC52E100A193CC /* CameraCaptureProvider.swift */,
+				588E92912EDC52EF00A193CC /* CameraCaptureService.swift */,
 				58BDFD622EDA08340009E07D /* ScreenRecordingPipeline.swift */,
 				5836F6C82ED3551B001B683E /* RecordingFileWriter.swift */,
 				580E0C3B2ECE2D89001C8D48 /* SCKScreenRecordingPipline.swift */,
@@ -349,7 +359,6 @@
 			children = (
 				588D2E8D2BE648E400EAD235 /* PlayerView.swift */,
 				588D2E8F2BE6495200EAD235 /* PlayerContainerView.swift */,
-				588D2E912BE6499200EAD235 /* ContentViewModel.swift */,
 				588D2E932BE64BBA00EAD235 /* CameraView.swift */,
 				588F1EEC2BE6DA4700AFE829 /* CameraOptionListView.swift */,
 			);
@@ -569,6 +578,7 @@
 				584B29AC2BE7ED7200800135 /* UploadVideoView.swift in Sources */,
 				584B29C22BE8ED5400800135 /* UploadService.swift in Sources */,
 				588D2E8E2BE648E400EAD235 /* PlayerView.swift in Sources */,
+				588E92922EDC52EF00A193CC /* CameraCaptureService.swift in Sources */,
 				589D476C2BE532B300D7DE07 /* Types.swift in Sources */,
 				585F09CF2C6CAC0E00300D23 /* CGRect+Position.swift in Sources */,
 				589D476E2BE5885A00D7DE07 /* CircularProgressWithText.swift in Sources */,
@@ -595,13 +605,13 @@
 				5813B9AD2BE16D7C0078A3F9 /* Settings.swift in Sources */,
 				58D678FE2C6D26CF00ED3C4F /* ScreenInfo.swift in Sources */,
 				65B470802C05741100E931FE /* QuitAndLogoutView.swift in Sources */,
-				588D2E922BE6499200EAD235 /* ContentViewModel.swift in Sources */,
 				58277E972BEBAA68000B6FEB /* String+Trim.swift in Sources */,
 				58BDFD5F2EDA06C90009E07D /* AVAudioPCMBuffer.swift in Sources */,
 				584B29AE2BE7F96200800135 /* HttpClient.swift in Sources */,
 				58EE1C832BF0BE120068C3F1 /* MicInfo.swift in Sources */,
 				585F09CB2C6CABAF00300D23 /* FileUtils.swift in Sources */,
 				58D7CD8F2BDBAE9D00ADEDA4 /* InnerAIApp.swift in Sources */,
+				588E92942EDC530000A193CC /* WindowContentService.swift in Sources */,
 				5813B9AF2BE2478B0078A3F9 /* VideoRecordOptionListView.swift in Sources */,
 				58BDFD5D2EDA06C30009E07D /* DebugLogger.swift in Sources */,
 				584B29C42BE8F1EF00800135 /* FileInfo.swift in Sources */,
@@ -614,6 +624,7 @@
 				588F1EED2BE6DA4700AFE829 /* CameraOptionListView.swift in Sources */,
 				588D2E942BE64BBA00EAD235 /* CameraView.swift in Sources */,
 				585F09CD2C6CABF200300D23 /* AccessibilityHelper.swift in Sources */,
+				588E928E2EDC527800A193CC /* WindowReference.swift in Sources */,
 				584B29B82BE8028300800135 /* Response.swift in Sources */,
 				58BDFD612EDA07380009E07D /* RecordingHelpers.swift in Sources */,
 				584B29B22BE7FE8A00800135 /* Request.swift in Sources */,
@@ -621,6 +632,7 @@
 				584B29AA2BE7ED2900800135 /* UploadViewModel.swift in Sources */,
 				589D47672BE51A8E00D7DE07 /* RPScreenWriter.swift in Sources */,
 				585F09D12C6CDC4800300D23 /* AudioDeviceTransportType.swift in Sources */,
+				588E92902EDC52E100A193CC /* CameraCaptureProvider.swift in Sources */,
 				65B470842C05741100E931FE /* SpecificWindowCropView.swift in Sources */,
 				589B622D2C6E5AB900D11384 /* WindowUtil.swift in Sources */,
 				584B29B42BE8001200800135 /* Environment.swift in Sources */,

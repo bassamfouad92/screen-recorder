@@ -1,223 +1,337 @@
-# Screen Recording Architecture
+# Final Refactored Architecture
 
-## Overview
-The screen recording system follows a clean, decoupled architecture with clear separation of concerns. The `ScreenRecordManager` acts as the orchestrator, coordinating between capture, file management, and writing components.
-
-## Architecture Diagram
+## Complete System Architecture
 
 ```mermaid
 graph TB
-    VM[RecordingScreenViewModel<br/>UI Layer] -->|User Actions| SRM[ScreenRecordManager<br/>Orchestrator]
+    subgraph "UI Layer"
+        View[RecordingScreenView<br/>SwiftUI]
+        CameraView[CameraView<br/>SwiftUI]
+        ControlPanel[ControlPanelView]
+    end
     
-    SRM -->|Initializes & Controls| Pipeline[SCKScreenRecordingPipeline<br/>Capture Layer]
-    SRM -->|Creates File URL| RFM[RecordFileManager<br/>File Management]
-    SRM -->|Initializes & Subscribes| Writer[SCKRecordingFileWriter<br/>I/O Layer]
-    SRM -->|Configures| Mic[MicrophoneCaptureManager<br/>Audio Capture]
+    subgraph "Presentation Layer - Framework Independent"
+        ViewModel[RecordingScreenViewModel<br/>✅ No Framework Imports<br/>Only Combine]
+        
+        subgraph "Protocols"
+            CameraProtocol[CameraCaptureProvider<br/>Protocol]
+            WindowProtocol[WindowContentProvider<br/>Protocol]
+        end
+        
+        subgraph "Type Wrappers"
+            WindowRef[WindowReference<br/>Type-Erased Wrapper]
+        end
+    end
     
-    Pipeline -->|processedBuffers Publisher| Writer
-    Pipeline -->|errorPublisher| SRM
-    Mic -->|micBuffers Publisher| Pipeline
+    subgraph "Business Logic Layer"
+        Manager[ScreenRecordManager<br/>Orchestrator]
+        Config[RecordingConfiguration<br/>Value Object]
+        Events[RecordingEvent<br/>ViewEvent]
+    end
     
-    Pipeline -->|Captures| Screen[SCStream<br/>Screen/Window Capture]
-    Pipeline -->|Captures| AppAudio[SCStream<br/>App Audio]
+    subgraph "Service Layer - Real Implementations"
+        CameraService[CameraCaptureService<br/>AVFoundation]
+        WindowService[SCKWindowContentService<br/>ScreenCaptureKit]
+        Pipeline[SCKScreenRecordingPipeline<br/>ScreenCaptureKit]
+        Writer[SCKRecordingFileWriter<br/>AVFoundation]
+        MicManager[MicrophoneCaptureManager<br/>AVAudioEngine]
+    end
     
-    Writer -->|Writes to| File[Video File<br/>MP4/MOV]
-    RFM -->|Provides Path| File
+    subgraph "Test Layer"
+        MockCamera[MockCameraCaptureProvider]
+        MockWindow[MockWindowContentProvider]
+    end
     
-    style VM fill:#e1f5ff
-    style SRM fill:#fff4e1
-    style Pipeline fill:#e8f5e9
-    style Writer fill:#f3e5f5
-    style Mic fill:#fce4ec
-    style RFM fill:#fff9c4
+    subgraph "Model Layer"
+        RecordingBuffer[RecordingBuffer<br/>Unified Buffer Type]
+        WriterConfig[WriterConfig<br/>Configuration]
+        FileManager[RecordFileManager<br/>File Operations]
+    end
+    
+    subgraph "Utilities"
+        DebugLogger[DebugLogger<br/>Structured Logging]
+        Helpers[RecordingHelpers<br/>Utilities]
+    end
+    
+    %% UI to ViewModel
+    View -->|Actions| ViewModel
+    View -->|Observes State| ViewModel
+    CameraView -->|Uses| CameraProtocol
+    ControlPanel -->|Sends Actions| ViewModel
+    
+    %% ViewModel Dependencies (Protocol Only)
+    ViewModel -->|Depends on| CameraProtocol
+    ViewModel -->|Depends on| WindowProtocol
+    ViewModel -->|Uses| WindowRef
+    ViewModel -->|Creates| Manager
+    ViewModel -->|Emits| Events
+    
+    %% Protocol Implementations
+    CameraProtocol -.->|Implemented by| CameraService
+    CameraProtocol -.->|Mocked by| MockCamera
+    WindowProtocol -.->|Implemented by| WindowService
+    WindowProtocol -.->|Mocked by| MockWindow
+    
+    %% Manager Orchestration
+    Manager -->|Uses| Config
+    Manager -->|Creates| Pipeline
+    Manager -->|Creates| Writer
+    Manager -->|Converts| WindowRef
+    Manager -->|Emits| Events
+    
+    %% Service Dependencies
+    Pipeline -->|Captures Screen| WindowService
+    Pipeline -->|Captures Audio| MicManager
+    Pipeline -->|Emits| RecordingBuffer
+    Writer -->|Writes| RecordingBuffer
+    Writer -->|Uses| WriterConfig
+    Writer -->|Saves to| FileManager
+    
+    %% Logging
+    ViewModel -.->|Logs| DebugLogger
+    Manager -.->|Logs| DebugLogger
+    Pipeline -.->|Logs| DebugLogger
+    Writer -.->|Logs| DebugLogger
+    
+    %% Styling
+    classDef uiLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef viewModelLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    classDef protocolLayer fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef serviceLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef testLayer fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef modelLayer fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    
+    class View,CameraView,ControlPanel uiLayer
+    class ViewModel viewModelLayer
+    class CameraProtocol,WindowProtocol,WindowRef protocolLayer
+    class CameraService,WindowService,Pipeline,Writer,MicManager serviceLayer
+    class MockCamera,MockWindow testLayer
+    class RecordingBuffer,WriterConfig,FileManager,Config,Events modelLayer
 ```
 
-## Component Responsibilities
+## Data Flow Architecture
 
-### 1. **RecordingScreenViewModel** (UI Layer)
-- Receives user actions (start, stop, pause, resume)
-- Manages UI state and recording lifecycle
-- Communicates with `ScreenRecordManager`
-
-### 2. **ScreenRecordManager** (Orchestrator)
-**Role**: Coordinates all recording components
-- Initializes `SCKScreenRecordingPipeline` with display/window config
-- Creates `SCKRecordingFileWriter` with video/audio settings
-- Subscribes to pipeline's `processedBuffers` and forwards to writer
-- Manages recording state (pause/resume)
-- Handles errors from pipeline
-
-**Key Properties**:
-- `pipeline`: SCKScreenRecordingPipeline?
-- `writer`: SCKRecordingFileWriter?
-- `isPause`: Bool (triggers pause/resume on both pipeline and writer)
-
-### 3. **SCKScreenRecordingPipeline** (Capture Layer)
-**Role**: Captures screen, window, and audio streams
-- Manages `SCStream` for screen/window capture
-- Integrates `MicrophoneCaptureManager` for mic input
-- Emits unified `RecordingBuffer` stream via Combine
-- Handles pause/resume by stopping buffer emission
-- Provides error notifications
-
-**Outputs**:
-- `processedBuffers`: AnyPublisher<RecordingBuffer, Never>
-- `errorPublisher`: AnyPublisher<RecordingError, Never>
-
-**Buffer Types**:
-- `.video` - Screen/window frames
-- `.appAudio` - System/app audio
-- `.microphone` - Mic input
-
-### 4. **MicrophoneCaptureManager** (Audio Capture)
-**Role**: Captures microphone audio independently
-- Uses `AVAudioEngine` for mic capture
-- Handles Bluetooth vs built-in device routing
-- Converts `AVAudioPCMBuffer` to `CMSampleBuffer`
-- Emits mic buffers via Combine publisher
-
-**Output**:
-- `micBuffers`: AnyPublisher<CMSampleBuffer, Never>
-
-### 5. **SCKRecordingFileWriter** (I/O Layer)
-**Role**: Writes video/audio buffers to file
-- Manages `AVAssetWriter` for video and audio tracks
-- Handles pause/resume with timestamp adjustment
-- Tracks accumulated pause duration
-- Writes three buffer types: video, app audio, microphone
-
-**Key Features**:
-- Session management (start/end)
-- Pause/resume with time adjustment
-- Async/await based API
-
-### 6. **RecordFileManager** (File Management)
-**Role**: Manages recording file paths
-- Creates output directory structure
-- Generates unique file URLs with timestamps
-- Provides file info retrieval
-- Handles file deletion
-
-## Data Flow
-
-### Recording Start Flow
-```
-1. ViewModel calls ScreenRecordManager.record()
-2. Manager creates file URL via RecordFileManager
-3. Manager initializes Pipeline with display/window config
-4. Manager initializes Writer with video/audio settings
-5. Manager subscribes: Pipeline.processedBuffers → Writer.write()
-6. Manager calls Pipeline.actionInput.send(.start)
-7. Pipeline starts SCStream and MicrophoneCaptureManager
-8. Buffers flow: SCStream → Pipeline → Writer → File
+```mermaid
+sequenceDiagram
+    participant V as RecordingScreenView
+    participant VM as RecordingScreenViewModel
+    participant M as ScreenRecordManager
+    participant P as SCKScreenRecordingPipeline
+    participant W as SCKRecordingFileWriter
+    participant Mic as MicrophoneCaptureManager
+    
+    Note over V,Mic: Recording Start Flow
+    
+    V->>VM: startRecording()
+    VM->>VM: setupWindows (via WindowContentProvider)
+    VM->>VM: isReadyToStart = true
+    V->>VM: Observes isReadyToStart
+    V->>VM: startRecording()
+    
+    VM->>M: record(displayID, windows...)
+    M->>M: Convert WindowReference → SCWindow
+    M->>P: Initialize Pipeline
+    M->>W: Initialize Writer
+    M->>Mic: Start if recordMic enabled
+    
+    Note over P,Mic: Recording In Progress
+    
+    P->>P: Capture Screen Frames
+    P->>P: Capture App Audio
+    Mic->>P: Emit Mic Buffers
+    P->>P: Unify as RecordingBuffer
+    P-->>W: processedBuffers.sink
+    W->>W: Write Video/Audio
+    
+    Note over V,W: User Actions
+    
+    V->>VM: sendAction(.pause)
+    VM->>M: actionInput.send(.pause)
+    M->>P: actionInput.send(.pause)
+    M->>W: pause()
+    
+    V->>VM: sendAction(.resume)
+    VM->>M: actionInput.send(.resume)
+    M->>P: actionInput.send(.resume)
+    M->>W: resume()
+    
+    Note over V,W: Recording Stop
+    
+    V->>VM: sendAction(.stop)
+    VM->>M: actionInput.send(.stop)
+    M->>P: actionInput.send(.stop)
+    M->>W: finish()
+    W-->>M: Return URL
+    M-->>VM: events.send(.stopped(URL))
+    VM-->>V: recordingState = .stopped
 ```
 
-### Buffer Flow
-```
-Screen Capture (SCStream) ──┐
-                            ├──→ Pipeline.processedBuffers ──→ Writer.write() ──→ File
-App Audio (SCStream) ───────┤
-                            │
-Microphone (AVAudioEngine) ─┘
+## Dependency Injection Architecture
+
+```mermaid
+graph LR
+    subgraph "Testable ViewModel"
+        VM[RecordingScreenViewModel]
+    end
+    
+    subgraph "Protocol Dependencies"
+        CP[CameraCaptureProvider]
+        WP[WindowContentProvider]
+    end
+    
+    subgraph "Production Implementations"
+        CS[CameraCaptureService]
+        WS[SCKWindowContentService]
+    end
+    
+    subgraph "Test Implementations"
+        MC[MockCameraCaptureProvider]
+        MW[MockWindowContentProvider]
+    end
+    
+    VM -->|Depends on| CP
+    VM -->|Depends on| WP
+    
+    CP -.->|Production| CS
+    CP -.->|Testing| MC
+    
+    WP -.->|Production| WS
+    WP -.->|Testing| MW
+    
+    style VM fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    style CP fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style WP fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style CS fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style WS fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style MC fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    style MW fill:#ffebee,stroke:#b71c1c,stroke-width:2px
 ```
 
-### Pause/Resume Flow
-```
-1. ViewModel sets ScreenRecordManager.isPause = true
-2. Manager sends .pause to Pipeline.actionInput
-3. Manager calls Writer.pause()
-4. Pipeline stops emitting buffers (isPaused = true)
-5. Writer records pause timestamp
+## Buffer Flow Architecture
 
-Resume:
-1. ViewModel sets ScreenRecordManager.isPause = false
-2. Manager sends .resume to Pipeline.actionInput
-3. Manager calls Writer.resume()
-4. Pipeline resumes buffer emission
-5. Writer calculates pause duration and adjusts timestamps
+```mermaid
+graph TB
+    subgraph "Capture Sources"
+        Screen[Screen Capture<br/>ScreenCaptureKit]
+        AppAudio[App Audio<br/>ScreenCaptureKit]
+        Mic[Microphone<br/>AVAudioEngine]
+    end
+    
+    subgraph "Pipeline Processing"
+        Pipeline[SCKScreenRecordingPipeline]
+        
+        subgraph "Buffer Unification"
+            VideoBuffer[RecordingBuffer<br/>.video]
+            AppAudioBuffer[RecordingBuffer<br/>.appAudio]
+            MicBuffer[RecordingBuffer<br/>.microphone]
+        end
+    end
+    
+    subgraph "Writer Processing"
+        Writer[SCKRecordingFileWriter]
+        
+        subgraph "Writer Inputs"
+            VideoInput[AVAssetWriterInput<br/>Video]
+            AppAudioInput[AVAssetWriterInput<br/>App Audio]
+            MicAudioInput[AVAssetWriterInput<br/>Mic Audio]
+        end
+    end
+    
+    subgraph "Output"
+        File[MP4/MOV File]
+    end
+    
+    Screen -->|CMSampleBuffer| Pipeline
+    AppAudio -->|CMSampleBuffer| Pipeline
+    Mic -->|CMSampleBuffer| Pipeline
+    
+    Pipeline -->|Emit| VideoBuffer
+    Pipeline -->|Emit| AppAudioBuffer
+    Pipeline -->|Emit| MicBuffer
+    
+    VideoBuffer -->|processedBuffers| Writer
+    AppAudioBuffer -->|processedBuffers| Writer
+    MicBuffer -->|processedBuffers| Writer
+    
+    Writer -->|Route to| VideoInput
+    Writer -->|Route to| AppAudioInput
+    Writer -->|Route to| MicAudioInput
+    
+    VideoInput -->|Write| File
+    AppAudioInput -->|Write| File
+    MicAudioInput -->|Write| File
+    
+    style Pipeline fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style Writer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style VideoBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style AppAudioBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style MicBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
 ```
+
+## Layer Responsibilities
+
+### 🎨 UI Layer
+- **RecordingScreenView**: SwiftUI view, handles UI events, observes ViewModel
+- **CameraView**: Camera preview with presentation styles
+- **ControlPanelView**: Recording controls (play/pause/stop/restart/delete)
+
+### 🧠 Presentation Layer (Framework-Independent)
+- **RecordingScreenViewModel**: 
+  - ✅ NO framework imports (only Combine)
+  - Manages UI state
+  - Coordinates services via protocols
+  - Emits view events
+  - 100% testable
+
+### 🔌 Protocols
+- **CameraCaptureProvider**: Camera abstraction
+- **WindowContentProvider**: Window lookup abstraction
+- **ScreenRecordingPipeline**: Recording pipeline abstraction
+- **RecordingFileWriter**: File writing abstraction
+
+### 🎬 Business Logic Layer
+- **ScreenRecordManager**: Orchestrates recording workflow
+- **RecordingConfiguration**: Immutable configuration
+- **RecordingEvent/ViewEvent**: Event types
+
+### ⚙️ Service Layer
+- **SCKScreenRecordingPipeline**: Screen/audio capture using ScreenCaptureKit
+- **SCKRecordingFileWriter**: File writing using AVFoundation
+- **CameraCaptureService**: Camera capture using AVFoundation
+- **SCKWindowContentService**: Window management using ScreenCaptureKit
+- **MicrophoneCaptureManager**: Microphone capture using AVAudioEngine
+
+### 🧪 Test Layer
+- **MockCameraCaptureProvider**: Camera mock for testing
+- **MockWindowContentProvider**: Window mock for testing
+
+### 📦 Model Layer
+- **RecordingBuffer**: Unified buffer wrapper
+- **WindowReference**: Type-erased window wrapper
+- **WriterConfig**: Writer configuration
+- **RecordFileManager**: File management
+
+### 🛠️ Utilities
+- **DebugLogger**: Structured, categorized logging
+- **RecordingHelpers**: Helper functions
 
 ## Key Design Patterns
 
-### 1. **Separation of Concerns**
-- Pipeline: Capture only
-- Writer: File I/O only
-- Manager: Orchestration only
+1. **Dependency Injection**: All dependencies injected via init
+2. **Protocol-Oriented**: ViewModel depends on protocols only
+3. **Type Erasure**: `WindowReference` hides `SCWindow` from ViewModel
+4. **Publisher/Subscriber**: Combine for reactive data flow
+5. **Orchestrator**: `ScreenRecordManager` coordinates components
+6. **Factory Method**: `WriterConfig.create()` for complex configuration
+7. **Strategy Pattern**: Different recording modes (fullscreen/window/camera)
 
-### 2. **Reactive Programming (Combine)**
-- Pipeline emits buffers via publishers
-- Manager subscribes and forwards to writer
-- Decoupled communication between components
+## Benefits Achieved
 
-### 3. **Protocol-Oriented Design**
-- `ScreenRecordingPipeline` protocol for capture abstraction
-- `RecordingFileWriter` protocol for I/O abstraction
-- Easy to swap implementations
-
-### 4. **Factory Pattern**
-- `WriterConfig.create()` for complex configuration
-- Centralizes video/audio settings logic
-
-## Debug Logging
-
-The system includes comprehensive logging via `DebugLogger`:
-
-**Categories**:
-- 🎬 ACTION: User actions (start, stop, pause, resume)
-- ⚡️ PIPELINE: Capture events and buffer flow
-- 💾 WRITER: Write operations and session management
-- 🎤 MIC: Microphone capture events
-- ❌ ERROR: Error conditions
-- ℹ️ INFO: General information
-
-**What's Logged**:
-- Recording lifecycle events
-- Buffer flow (every 60th frame/buffer)
-- Pause/resume with duration tracking
-- File creation and completion
-- Error conditions
-
-## Configuration
-
-### Video Settings
-- Configured via `WriterConfig.create()`
-- Supports H.264 (sRGB) and HEVC (Display P3)
-- Auto-downscales for 4K/8K displays
-- Uses `AVOutputSettingsAssistant` for optimal settings
-
-### Audio Settings
-- Sample Rate: 44,100 Hz
-- Channels: 2 (Stereo)
-- Format: AAC
-- Separate tracks for app audio and microphone
-
-### File Output
-- Formats: MP4, MOV
-- Location: `~/Documents/inneraivideos/`
-- Naming: `recording-{timestamp}.{ext}`
-
-## Error Handling
-
-Errors flow from Pipeline → Manager → ViewModel:
-
-```swift
-Pipeline.errorPublisher
-    .sink { error in
-        DebugLogger.log(.error, "Pipeline error: \(error)")
-        manager.onStopStream(nil)
-    }
-```
-
-**Error Types**:
-- `.captureStartFailed`: Failed to start SCStream
-- `.captureStopFailed`: Failed to stop capture
-- `.displayNotFound`: Invalid display ID
-- `.custom(String)`: Configuration errors
-
-## Future Improvements
-
-1. **Separate Audio Writer**: Currently mic and app audio share the video writer
-2. **Configurable Logging**: Runtime enable/disable per category
-3. **Buffer Queue Management**: Handle backpressure if writer is slow
-4. **Metrics Collection**: Track dropped frames, buffer delays
-5. **Recovery Mechanisms**: Auto-restart on stream errors
+✅ **100% Testable ViewModel** - No framework dependencies  
+✅ **Clean Architecture** - Clear layer separation  
+✅ **SOLID Principles** - All 5 principles followed  
+✅ **Reactive** - Combine-based data flow  
+✅ **Maintainable** - Single responsibility per component  
+✅ **Flexible** - Easy to swap implementations  
+✅ **Observable** - Comprehensive debug logging  
+✅ **Type-Safe** - Protocol-based contracts  

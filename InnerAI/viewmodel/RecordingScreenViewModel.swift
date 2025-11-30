@@ -6,227 +6,277 @@
 //
 
 import Combine
-import ScreenCaptureKit
+import CoreGraphics
+import Foundation
 
 enum ControlPanelVisibility {
     case show
     case hide
 }
 
+enum ConfirmationAction {
+    case restart
+    case delete
+}
+
+enum ViewEvent {
+    case hidePopover
+    case showControlPanel
+    case hideControlPanel
+    case hideWindow
+    case hideCameraWindow
+}
+
 class RecordingScreenViewModel: ObservableObject {
     
-    @Published var screenRecordManager: ScreenRecordManager?
+    // MARK: - Published Properties
     @Published var controlPanelVisibility: ControlPanelVisibility = .hide
-    @Published var recordingResult: FileInfo? = nil
-    @Published var displayingActionPopup: Bool = false
-    @Published var restartPerformed: Bool = false
-    @Published var contentViewModel: ContentViewModel
-    @Published var selectedWindow: SCWindow?
-    @Published var cameraWindow: SCWindow?
     @Published var recordingState: RecordingState = .inProgress
-
-    /// View sends actions into this subject
-    let actionSubject = PassthroughSubject<RecordAction, Never>()
-    private var cancellables = Set<AnyCancellable>()
-
-    /// External state from parent
+    @Published var selectedWindow: WindowReference?
+    @Published var cameraWindow: WindowReference?
+    
+    // Confirmation dialog
+    @Published var showConfirmationDialog = false
+    @Published var confirmationAction: ConfirmationAction?
+    
+    // Control panel state
+    @Published var restartPerformed = false
+    @Published var showingConfirmation = false
+    @Published var isReadyToStart = false
+    
+    // MARK: - Publishers
+    private let viewEventSubject = PassthroughSubject<ViewEvent, Never>()
+    var viewEvents: AnyPublisher<ViewEvent, Never> {
+        viewEventSubject.eraseToAnyPublisher()
+    }
+    
+    // MARK: - Dependencies
+    private let screenRecordManager: ScreenRecordManager
+    let cameraService: any CameraCaptureProvider
+    private let windowContentProvider: WindowContentProvider
+    
+    // MARK: - Configuration
     var recordConfig: RecordConfiguration!
-    var appDelegate: AppDelegate!
     var screenSize = CGSize.zero
     
-    init(contentViewModel: ContentViewModel) {
-        self.contentViewModel = contentViewModel
-        bindActions()
+    // MARK: - Private
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Init
+    init(
+        cameraService: any CameraCaptureProvider,
+        recordConfig: RecordConfiguration,
+        windowContentProvider: WindowContentProvider = SCKWindowContentService()
+    ) {
+        self.cameraService = cameraService
+        self.recordConfig = recordConfig
+        self.windowContentProvider = windowContentProvider
+        
+        // Create configuration
+        let config = RecordingConfiguration(
+            audioDeviceId: recordConfig.audioDeviceId ?? 0,
+            recordMic: recordConfig.settings.enableAudio,
+            audioDeviceTransportType: recordConfig.audioDeviceTransportType ?? .builtIn,
+            mode: .h264_sRGB,
+            videoFormat: .mp4
+        )
+        
+        // Initialize manager
+        self.screenRecordManager = ScreenRecordManager(configuration: config)
+        
+        setupBindings()
     }
-
-    private func bindActions() {
-        actionSubject
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] action in
-                guard let self = self else { return }
+    
+    private func setupBindings() {
+        screenRecordManager.events
+            .receive(on: RunLoop.main)
+            .sink { [weak self] event in
                 Task { @MainActor in
-                    self.handle(action: action)
+                    self?.handleRecordingEvent(event)
                 }
             }
             .store(in: &cancellables)
     }
 
-    @MainActor
-    private func handle(action: RecordAction) {
-        switch action {
-        case .stop:
-            stopRecording()
-        case .pause:
-            screenRecordManager?.isPause = true
-
-        case .resume:
-            screenRecordManager?.isPause = false
-
-        case .restart:
-            restartRecording()
-
-        case .delete:
-            deleteRecording()
-
-        default:
-            recordingState = .inProgress
-            break
-        }
-    }
-
-    // MARK: - Recording Ops
+    // MARK: - Recording Operations
+    
     @MainActor
     func startRecording() async {
         do {
-            appDelegate.hidePopOver()
+            viewEventSubject.send(.hidePopover)
             controlPanelVisibility = .hide
             
-            screenRecordManager = ScreenRecordManager()
-            screenRecordManager?.audioDeviceId = recordConfig.audioDeviceId ?? 0
-            screenRecordManager?.recordMic = recordConfig.settings.enableAudio
-            screenRecordManager?.audioDeviceTransportType = recordConfig.audioDeviceTransportType ?? .builtIn
-            
-            screenRecordManager?.onStopStream = { [weak self] _ in
-                Task { @MainActor in
-                    self?.stopRecording()
-                }
-            }
-            
             // Exclude control window
-            var excluded: [SCWindow] = []
-            if let controls = try await SCShareableContent
-                .current
-                .windows
-                .first(where: { $0.title == "InnerAIRecordWindow" })
-            {
-                excluded.append(controls)
-            }
+            let excluded = try await windowContentProvider.getExcludedWindows(
+                withTitles: ["InnerAIRecordWindow"]
+            )
             
-            try await screenRecordManager?.record(
+            // Setup recording
+            try await screenRecordManager.record(
                 displayID: recordConfig.screenInfo?.displayID ?? CGMainDisplayID(),
                 selectedWindow: selectedWindow,
                 cameraWindow: cameraWindow,
                 excludedWindows: excluded
             )
             
-            try await screenRecordManager?.start()
+            // Start
+            try await screenRecordManager.start()
             controlPanelVisibility = .show
             
         } catch {
-            print("Recording failed: \(error)")
+            DebugLogger.log(.error, "Recording failed: \(error)")
         }
-    }
-
-    @MainActor
-    func stopRecording() {
-        guard let fileURL = screenRecordManager?.fileURL,
-              let fileInfo = RecordFileManager.shared.fetchFileInfo(fromPath: fileURL)
-        else {
-            stopRecordingSession()
-            appDelegate.hideWindow()
-            return
-        }
-        
-        let info = FileInfo(
-                url: fileInfo.fileURL,
-                name: fileInfo.fileName,
-                size: fileInfo.fileSize,
-                type: "video/\(fileInfo.fileType)"
-            )
-            
-        recordingState = .stopped(info)
-        
-        stopRecordingSession()
-        appDelegate.hideCameraWindow()
-        appDelegate.hideWindow()
     }
     
-    func restartRecording() {
-        displayingActionPopup = true
-        screenRecordManager?.isPause = true
-        
-        appDelegate.showCustomPopup(
-            title: "Restart your recording?",
-            message: "The progress on your current video will be lost.",
-            buttonTitle: "Restart"
-        ) { [weak self] cancelled in
+    @MainActor
+    private func handleRecordingEvent(_ event: RecordingEvent) {
+        switch event {
+        case .started:
+            recordingState = .inProgress
             
-            guard let self else { return }
-            
-            if cancelled {
-                displayingActionPopup = false
-                appDelegate.hideCustomPopup()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.screenRecordManager?.isPause = false
-                }
-                return
+        case .stopped(let url):
+            if let fileInfo = RecordFileManager.shared.fetchFileInfo(fromPath: url) {
+                let info = FileInfo(
+                    url: fileInfo.fileURL,
+                    name: fileInfo.fileName,
+                    size: fileInfo.fileSize,
+                    type: "video/\(fileInfo.fileType)"
+                )
+                recordingState = .stopped(info)
             }
             
-            if let filePath = self.screenRecordManager?.filePath {
-                RecordFileManager.shared.deleteFile(atPath: filePath)
-            }
+            cleanup()
             
-            Task {
-                try? await self.screenRecordManager?.stopRecording()
-            }
-
-            stopRecordingSession(stopCameraCapturing: false, isRestart: true)
-            self.startRecordingAgain()
+        case .error:
+            cleanup()
         }
     }
-
-    private func startRecordingAgain() {
+    
+    func sendAction(_ action: RecordAction) {
+        switch action {
+        case .pause, .resume, .start:
+            screenRecordManager.actionInput.send(action)
+            
+        case .stop:
+            screenRecordManager.actionInput.send(.stop)
+            
+        case .restart:
+            confirmationAction = .restart
+            showConfirmationDialog = true
+            showingConfirmation = true
+            screenRecordManager.actionInput.send(.pause)
+            
+        case .delete:
+            confirmationAction = .delete
+            showConfirmationDialog = true
+            showingConfirmation = true
+            screenRecordManager.actionInput.send(.pause)
+        }
+    }
+    
+    @MainActor func confirmAction() {
+        guard let action = confirmationAction else { return }
+        
+        switch action {
+        case .restart:
+            executeRestart()
+        case .delete:
+            executeDelete()
+        }
+        
+        showConfirmationDialog = false
+        showingConfirmation = false
+        confirmationAction = nil
+    }
+    
+    func cancelAction() {
+        showConfirmationDialog = false
+        showingConfirmation = false
+        confirmationAction = nil
+        
+        // Resume recording
+        screenRecordManager.actionInput.send(.resume)
+    }
+    
+    private func executeRestart() {
+        // Delete current file
+        if let filePath = screenRecordManager.filePath {
+            RecordFileManager.shared.deleteFile(atPath: filePath)
+        }
+        
+        // Stop and restart
         Task {
+            screenRecordManager.actionInput.send(.stop)
+            cameraService.stopSession()
+            
+            // Wait a bit then restart
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            
+            // Signal restart to control panel
+            await MainActor.run {
+                restartPerformed = true
+            }
+            
             await startRecording()
         }
     }
     
-    func deleteRecording() {
-        displayingActionPopup = true
-        screenRecordManager?.isPause = true
-
-        appDelegate.showCustomPopup(
-            title: "Delete your Recording?",
-            message: "The progress on your current video will be lost.",
-            buttonTitle: "Delete"
-        ) { [weak self] cancelled in
+    @MainActor private func executeDelete() {
+        // Delete file
+        if let filePath = screenRecordManager.filePath {
+            RecordFileManager.shared.deleteFile(atPath: filePath)
+        }
+        
+        // Stop recording
+        screenRecordManager.actionInput.send(.delete)
+        recordingState = .deleted
+        cleanup()
+    }
+    
+    @MainActor
+    private func cleanup() {
+        cameraService.stopSession()
+        viewEventSubject.send(.hideCameraWindow)
+        viewEventSubject.send(.hideWindow)
+    }
+    
+    // MARK: - Window Setup
+    
+    func setupWindowsForSpecificWindow(windowID: CGWindowID) async {
+        do {
+            selectedWindow = try await windowContentProvider.getWindow(withID: windowID)
+            cameraWindow = try await windowContentProvider.getWindow(withTitle: "CameraWindow")
             
-            guard let self else { return }
-
-            if cancelled {
-                displayingActionPopup = false
-                appDelegate.hideCustomPopup()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.screenRecordManager?.isPause = false
-                }
-                return
+            // Delay then signal ready
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+            await MainActor.run {
+                isReadyToStart = true
             }
-
-            if let filePath = self.screenRecordManager?.filePath {
-                RecordFileManager.shared.deleteFile(atPath: filePath)
-            }
-            stopRecordingSession()
-            recordingState = .deleted
-            appDelegate.hideWindow()
-            screenRecordManager = nil
+        } catch {
+            DebugLogger.log(.error, "Failed to get specific window: \(error)")
         }
     }
-
-    private func stopRecordingSession(stopCameraCapturing: Bool = true, isRestart: Bool = false) {
-        Task {
-            do {
-                if stopCameraCapturing {
-                    contentViewModel.stopSession()
-                }
-                try await screenRecordManager?.stopRecording()
-                if !isRestart {
-                    screenRecordManager = nil
-                }
-             } catch {
-                print("Error during recording:", error)
+    
+    func setupWindowsForCameraOnly() async {
+        do {
+            selectedWindow = try await windowContentProvider.getWindow(withTitle: "CameraWindow")
+            
+            // Delay then signal ready
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+            await MainActor.run {
+                isReadyToStart = true
             }
+        } catch {
+            DebugLogger.log(.error, "Failed to get camera window: \(error)")
         }
     }
-
+    
+    func setupWindowsForFullScreen() async {
+        // No specific windows needed for fullscreen
+        // Delay then signal ready
+        try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+        await MainActor.run {
+            isReadyToStart = true
+        }
+    }
 }
-

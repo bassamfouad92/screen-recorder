@@ -15,15 +15,15 @@ enum CameraViewPresentationStyle {
 struct CameraView: View {
         
     let presentationStyle: CameraViewPresentationStyle
-    @ObservedObject var viewModel: ContentViewModel
+    let service: any CameraCaptureProvider
 
-    init(presentationStyle: CameraViewPresentationStyle, viewModel: ContentViewModel) {
+    init(presentationStyle: CameraViewPresentationStyle, service: any CameraCaptureProvider = CameraCaptureService()) {
         self.presentationStyle = presentationStyle
-        self.viewModel = viewModel
+        self.service = service
     }
     
     var body: some View {
-        applyCustomModifiers(to: PlayerContainerView(captureSession: viewModel.captureSession))
+        applyCustomModifiers(to: PlayerContainerView(captureSession: service.captureSession))
     }
     
     @ViewBuilder

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ScreenCaptureKit
+import Combine
 
 enum RecordingControlAction {
     case stop
@@ -42,6 +43,7 @@ struct RecordingScreenView: View {
     let recordConfig: RecordConfiguration
     
     @State private var offset = CGSize.zero
+    @State private var cancellables = Set<AnyCancellable>()
     
     @StateObject var viewModel: RecordingScreenViewModel
     @EnvironmentObject var appDelegate: AppDelegate
@@ -52,66 +54,106 @@ struct RecordingScreenView: View {
         ZStack {
             windowContentLayer()
             cameraLayer()
-        }.onAppear {
+        }
+        .onAppear {
             viewDidAppear()
-        }.onChange(of: viewModel.recordingState) { newState in
-            switch newState {
-            case .inProgress:
-                onStateChanged(.inProgress)
-                print("Recording started ⏺️")
-            case .stopped(let file):
-                onStateChanged(.stopped(file))
-                print("Recording stopped ✅", file.name)
-            case .deleted:
-                onStateChanged(.deleted)
-                print("Recording deleted 🗑️")
+            setupViewEventHandling()
+        }
+        .onChange(of: viewModel.recordingState) { newState in
+            handleStateChange(newState)
+        }
+        .onChange(of: viewModel.isReadyToStart) { ready in
+            if ready {
+                startRecording()
+                viewModel.isReadyToStart = false // Reset
             }
         }
         .frame(width: screenSize.width, height: screenSize.height, alignment: .bottomLeading)
-            .edgesIgnoringSafeArea(.all)
-            .background(.clear)
-            .overlay(
-                controlPanelLayer(),
-                alignment: .bottomLeading
-            )
-
-    }
-    
-    // MARK: Screen capture kit handler
-    private func getSpecificWindow() {
-        Task {
-            let sharableContent = try await SCShareableContent.current
-            if let windowID = recordConfig.windowInfo?.windowID {
-                viewModel.selectedWindow = sharableContent.windows.first(where: { $0.windowID == windowID })
-                viewModel.cameraWindow = sharableContent.windows.first(where: { $0.title == "CameraWindow" })
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    startRecording()
-                }
+        .edgesIgnoringSafeArea(.all)
+        .background(.clear)
+        .overlay(
+            controlPanelLayer(),
+            alignment: .bottomLeading
+        )
+        .confirmationDialog(
+            confirmationTitle(),
+            isPresented: $viewModel.showConfirmationDialog,
+            titleVisibility: .visible
+        ) {
+            Button(confirmationButtonTitle(), role: .destructive) {
+                viewModel.confirmAction()
             }
+            Button("Cancel", role: .cancel) {
+                viewModel.cancelAction()
+            }
+        } message: {
+            Text(confirmationMessage())
         }
     }
     
-    private func getCameraOnlyWindows() {
-        
-        SCShareableContent.getWithCompletionHandler { shareableContent, error in
-            if let error = error {
-                print("Error retrieving windows: \(error.localizedDescription)")
-                return
+    // MARK: - View Event Handling
+    
+    private func setupViewEventHandling() {
+        viewModel.viewEvents
+            .receive(on: DispatchQueue.main)
+            .sink { [weak appDelegate] event in
+                handleViewEvent(event, appDelegate: appDelegate)
             }
-            
-            guard let shareableContent = shareableContent else {
-                print("Error: Shareable content is nil")
-                return
-            }
-            
-            DispatchQueue.main.async {
-                if let cameraWindow = shareableContent.windows.first(where: { $0.title == "CameraWindow" }) {
-                    viewModel.selectedWindow = cameraWindow
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        startRecording()
-                    }
-                }
-            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleViewEvent(_ event: ViewEvent, appDelegate: AppDelegate?) {
+        switch event {
+        case .hidePopover:
+            appDelegate?.hidePopOver()
+        case .showControlPanel:
+            break
+        case .hideControlPanel:
+            break
+        case .hideWindow:
+            appDelegate?.hideWindow()
+        case .hideCameraWindow:
+            appDelegate?.hideCameraWindow()
+        }
+    }
+    
+    private func handleStateChange(_ newState: RecordingState) {
+        switch newState {
+        case .inProgress:
+            onStateChanged(.inProgress)
+            DebugLogger.log(.info, "Recording started ⏺️")
+        case .stopped(let file):
+            onStateChanged(.stopped(file))
+            DebugLogger.log(.info, "Recording stopped ✅ \(file.name)")
+        case .deleted:
+            onStateChanged(.deleted)
+            DebugLogger.log(.info, "Recording deleted 🗑️")
+        }
+    }
+    
+    // MARK: - Confirmation Dialog
+    
+    private func confirmationTitle() -> String {
+        guard let action = viewModel.confirmationAction else { return "" }
+        switch action {
+        case .restart:
+            return "Restart your recording?"
+        case .delete:
+            return "Delete your Recording?"
+        }
+    }
+    
+    private func confirmationMessage() -> String {
+        "The progress on your current video will be lost."
+    }
+    
+    private func confirmationButtonTitle() -> String {
+        guard let action = viewModel.confirmationAction else { return "" }
+        switch action {
+        case .restart:
+            return "Restart"
+        case .delete:
+            return "Delete"
         }
     }
 }
@@ -125,7 +167,7 @@ extension RecordingScreenView {
                 SpecificWindowCropView(title: windowInfo.title, onWindowFront: { bottomLeftPos, _ in
                     if recordConfig.settings.displayCamera, let _ = recordConfig.selectedCamera {
                         appDelegate.showCameraWindow(
-                            viewModel: viewModel.contentViewModel,
+                            service: viewModel.cameraService,
                             presentationStyle: .partial,
                             offset: CGSize(width: bottomLeftPos.x + 20, height: bottomLeftPos.y - 200),
                             screenSize: screenSize,
@@ -153,9 +195,9 @@ extension RecordingScreenView {
             if viewModel.controlPanelVisibility == .show {
                 ControlPanelView(
                     restartRecording: $viewModel.restartPerformed,
-                    isPopupDisplayed: $viewModel.displayingActionPopup,
+                    isPopupDisplayed: $viewModel.showingConfirmation,
                     onClicked: { action in
-                        viewModel.actionSubject.send(action)
+                        viewModel.sendAction(action)
                     }
                 ).offset(x: offset.width, y: offset.height)
                 
@@ -177,33 +219,50 @@ extension RecordingScreenView {
 // MARK: Lifecycle functions
 extension RecordingScreenView {
     private func viewDidAppear() {
-        viewModel.appDelegate = appDelegate
-        viewModel.recordConfig = recordConfig
-        viewModel.displayingActionPopup = false
-        
         moveWindowToExternalIfNeeded()
-        viewModel.contentViewModel.selectedCamera = recordConfig.selectedCamera
-        viewModel.contentViewModel.checkAuthorization()
+        viewModel.cameraService.selectedCamera = recordConfig.selectedCamera
+        viewModel.cameraService.checkAuthorization()
         setupRecording()
     }
     
     private func setupRecording() {
-        if recordConfig.videoWindowType == .specific {
-            getSpecificWindow()
-        } else if recordConfig.videoWindowType == .camera {
+        switch recordConfig.videoWindowType {
+        case .specific:
+            if let windowID = recordConfig.windowInfo?.windowID {
+                Task {
+                    await viewModel.setupWindowsForSpecificWindow(windowID: windowID)
+                }
+            }
+            
+        case .camera:
             if let _ = recordConfig.selectedCamera, recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel.contentViewModel, presentationStyle: .full, offset: CGSize.zero, screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
+                appDelegate.showCameraWindow(
+                    service: viewModel.cameraService,
+                    presentationStyle: .full,
+                    offset: CGSize.zero,
+                    screenSize: screenSize,
+                    displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID()
+                )
                 appDelegate.makeDefaultOverlayWindowsOnTop()
             }
             moveCameraWindowToExternalIfNeeded()
-            getCameraOnlyWindows()
-        } else {
+            Task {
+                await viewModel.setupWindowsForCameraOnly()
+            }
+            
+        case .fullScreen:
             if recordConfig.settings.displayCamera {
-                appDelegate.showCameraWindow(viewModel: viewModel.contentViewModel, presentationStyle: .partial, offset: .zero, screenSize: screenSize, displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
+                appDelegate.showCameraWindow(
+                    service: viewModel.cameraService,
+                    presentationStyle: .partial,
+                    offset: .zero,
+                    screenSize: screenSize,
+                    displayId: recordConfig.screenInfo?.displayID ?? CGMainDisplayID()
+                )
                 moveCameraWindowToExternalIfNeeded()
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                startRecording()
+            Task {
+                await viewModel.setupWindowsForFullScreen()
             }
         }
     }
@@ -224,20 +283,17 @@ extension RecordingScreenView {
             WindowInfo(windowTitle: "CameraWindow", appName: "Screen Recoder by Inner AI")
         ], toDisplay: recordConfig.screenInfo?.displayID ?? CGMainDisplayID())
     }
-    
-    private func viewDidDisappear() {
-        appDelegate.hideCameraWindow()
-    }
 }
 
 // MARK: Screen capture kit recordering functions
 //
 extension RecordingScreenView {
     private func startRecording() {
-        appDelegate.hidePopOver()
         onStateChanged(.inProgress)
         Task {
             await viewModel.startRecording()
         }
     }
 }
+
+

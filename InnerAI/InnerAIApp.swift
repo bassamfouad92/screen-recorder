@@ -295,7 +295,7 @@ extension AppDelegate {
             }
         }
         
-        rootView = RecordingScreenView(screenSize: windowFrame, recordConfig: newConfig, viewModel: RecordingScreenViewModel(contentViewModel: ContentViewModel()), onStateChanged: callback)
+        rootView = RecordingScreenView(screenSize: windowFrame, recordConfig: newConfig, viewModel: RecordingScreenViewModel(cameraService: CameraCaptureService(), recordConfig: newConfig), onStateChanged: callback)
         self.window?.contentView = NSHostingView(rootView: rootView.environmentObject(self))
         showWindow()
     }
@@ -303,7 +303,7 @@ extension AppDelegate {
     func displayCameraPreview() {
         hidePopOver()
         let screenSize = NSScreen.main?.frame
-        self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(viewModel: ContentViewModel(), screenSize: screenSize!).environmentObject(self))
+        self.window?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(service: CameraCaptureService(), screenSize: screenSize!).environmentObject(self))
         showWindow()
     }
     

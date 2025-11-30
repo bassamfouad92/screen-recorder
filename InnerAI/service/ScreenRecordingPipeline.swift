@@ -17,22 +17,3 @@ protocol ScreenRecordingPipeline: AnyObject {
     var processedBuffers: AnyPublisher<RecordingBuffer, Never> { get }
     var errorPublisher: AnyPublisher<RecordingError, Never> { get }
 }
-
-
-enum RecordingEvent {
-    case started
-    case paused
-    case resumed
-    case stopped
-    case failed(Error)
-}
-
-struct RecordingWindow {
-    let id: String
-    let frame: CGRect
-}
-
-struct RecordingDisplay {
-    let id: CGDirectDisplayID
-    let size: CGSize
-}

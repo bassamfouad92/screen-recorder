@@ -1,5 +1,5 @@
 //
-//  ContentViewModel.swift
+//  CameraCaptureService.swift
 //  InnerAI
 //
 //  Created by Bassam Fouad on 04/05/2024.
@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import AVFoundation
 
-class ContentViewModel: ObservableObject {
+final class CameraCaptureService: CameraCaptureProvider {
 
     @Published var isGranted: Bool = false
     var captureSession: AVCaptureSession!
