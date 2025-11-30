@@ -25,6 +25,7 @@ graph TB
     
     subgraph "Business Logic Layer"
         Manager[ScreenRecordManager<br/>Orchestrator]
+        BufferAdj[BufferAdjuster<br/>Pause/Resume Logic]
         Config[RecordingConfiguration<br/>Value Object]
         Events[RecordingEvent<br/>ViewEvent]
     end
@@ -76,6 +77,7 @@ graph TB
     Manager -->|Uses| Config
     Manager -->|Creates| Pipeline
     Manager -->|Creates| Writer
+    Manager -->|Uses| BufferAdj
     Manager -->|Converts| WindowRef
     Manager -->|Emits| Events
     
@@ -83,6 +85,8 @@ graph TB
     Pipeline -->|Captures Screen| WindowService
     Pipeline -->|Captures Audio| MicManager
     Pipeline -->|Emits| RecordingBuffer
+    BufferAdj -->|Adjusts| RecordingBuffer
+    BufferAdj -->|Filters when paused| RecordingBuffer
     Writer -->|Writes| RecordingBuffer
     Writer -->|Uses| WriterConfig
     Writer -->|Saves to| FileManager
@@ -106,7 +110,7 @@ graph TB
     class CameraProtocol,WindowProtocol,WindowRef protocolLayer
     class CameraService,WindowService,Pipeline,Writer,MicManager serviceLayer
     class MockCamera,MockWindow testLayer
-    class RecordingBuffer,WriterConfig,FileManager,Config,Events modelLayer
+    class RecordingBuffer,WriterConfig,FileManager,Config,Events,BufferAdj modelLayer
 ```
 
 ## Data Flow Architecture
@@ -116,6 +120,7 @@ sequenceDiagram
     participant V as RecordingScreenView
     participant VM as RecordingScreenViewModel
     participant M as ScreenRecordManager
+    participant BA as BufferAdjuster
     participant P as SCKScreenRecordingPipeline
     participant W as SCKRecordingFileWriter
     participant Mic as MicrophoneCaptureManager
@@ -140,20 +145,37 @@ sequenceDiagram
     P->>P: Capture App Audio
     Mic->>P: Emit Mic Buffers
     P->>P: Unify as RecordingBuffer
-    P-->>W: processedBuffers.sink
+    P->>M: processedBuffers.send
+    M->>BA: adjust(buffer)
+    BA->>M: Return adjusted buffer
+    M->>W: write(adjusted)
     W->>W: Write Video/Audio
     
-    Note over V,W: User Actions
+    Note over V,W: User Actions - Pause
     
     V->>VM: sendAction(.pause)
     VM->>M: actionInput.send(.pause)
     M->>P: actionInput.send(.pause)
-    M->>W: pause()
+    M->>BA: pause()
+    BA->>BA: isPaused = true
+    P->>M: processedBuffers.send
+    M->>BA: adjust(buffer)
+    BA->>M: Return nil
+    Note over M: compactMap drops nil
+    Note over W: Writer NOT called
+    
+    Note over V,W: User Actions - Resume
     
     V->>VM: sendAction(.resume)
     VM->>M: actionInput.send(.resume)
     M->>P: actionInput.send(.resume)
-    M->>W: resume()
+    M->>BA: resume()
+    BA->>BA: isPaused = false
+    P->>M: processedBuffers.send
+    M->>BA: adjust(buffer)
+    BA->>BA: Calculate pause duration<br/>Adjust PTS
+    BA->>M: Return adjusted buffer
+    M->>W: write(adjusted)
     
     Note over V,W: Recording Stop
     
@@ -207,7 +229,55 @@ graph LR
     style MW fill:#ffebee,stroke:#b71c1c,stroke-width:2px
 ```
 
-## Buffer Flow Architecture
+```
+
+## Pause/Resume Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant V as RecordingScreenView
+    participant VM as RecordingScreenViewModel
+    participant M as ScreenRecordManager
+    participant BA as BufferAdjuster
+    participant P as SCKScreenRecordingPipeline
+    participant W as SCKRecordingFileWriter
+    
+    Note over V,W: Pause Flow
+    
+    V->>VM: sendAction(.pause)
+    VM->>M: actionInput.send(.pause)
+    M->>P: actionInput.send(.pause)
+    Note over P: Logs pause (no state change)
+    M->>BA: pause()
+    BA->>BA: isPaused = true<br/>pauseStartPTS = nil
+    
+    Note over P,W: Buffers Continue Flowing
+    
+    P->>M: processedBuffers.send(buffer)
+    M->>BA: adjust(buffer)
+    BA->>BA: Mark pauseStartPTS<br/>Return nil
+    Note over M: compactMap drops nil
+    Note over W: Writer NOT called
+    
+    Note over V,W: Resume Flow
+    
+    V->>VM: sendAction(.resume)
+    VM->>M: actionInput.send(.resume)
+    M->>P: actionInput.send(.resume)
+    Note over P: Logs resume (no state change)
+    M->>BA: resume()
+    BA->>BA: isPaused = false<br/>totalPauseDuration = .zero
+    
+    Note over P,W: Buffers Resume Processing
+    
+    P->>M: processedBuffers.send(buffer)
+    M->>BA: adjust(buffer)
+    BA->>BA: Calculate pause duration<br/>Adjust PTS<br/>Return adjusted buffer
+    M->>W: write(adjusted)
+    W->>W: Append to file
+```
+
+## Buffer Flow Architecture with Pause/Resume
 
 ```mermaid
 graph TB
@@ -218,7 +288,7 @@ graph TB
     end
     
     subgraph "Pipeline Processing"
-        Pipeline[SCKScreenRecordingPipeline]
+        Pipeline[SCKScreenRecordingPipeline<br/>Always Streaming]
         
         subgraph "Buffer Unification"
             VideoBuffer[RecordingBuffer<br/>.video]
@@ -227,8 +297,18 @@ graph TB
         end
     end
     
+    subgraph "Manager Processing"
+        Manager[ScreenRecordManager]
+        BufferAdjuster[BufferAdjuster<br/>Pause/Resume Logic]
+        
+        subgraph "Combine Pipeline"
+            CompactMap[compactMap<br/>Drops nil when paused]
+            Sink[sink<br/>Writes to file]
+        end
+    end
+    
     subgraph "Writer Processing"
-        Writer[SCKRecordingFileWriter]
+        Writer[SCKRecordingFileWriter<br/>Dumb Writer]
         
         subgraph "Writer Inputs"
             VideoInput[AVAssetWriterInput<br/>Video]
@@ -249,9 +329,14 @@ graph TB
     Pipeline -->|Emit| AppAudioBuffer
     Pipeline -->|Emit| MicBuffer
     
-    VideoBuffer -->|processedBuffers| Writer
-    AppAudioBuffer -->|processedBuffers| Writer
-    MicBuffer -->|processedBuffers| Writer
+    VideoBuffer -->|processedBuffers| Manager
+    AppAudioBuffer -->|processedBuffers| Manager
+    MicBuffer -->|processedBuffers| Manager
+    
+    Manager -->|buffer| BufferAdjuster
+    BufferAdjuster -->|adjusted or nil| CompactMap
+    CompactMap -->|adjusted only| Sink
+    Sink -->|write| Writer
     
     Writer -->|Route to| VideoInput
     Writer -->|Route to| AppAudioInput
@@ -262,10 +347,12 @@ graph TB
     MicAudioInput -->|Write| File
     
     style Pipeline fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style BufferAdjuster fill:#fff9c4,stroke:#f57f17,stroke-width:3px
     style Writer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     style VideoBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
     style AppAudioBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
     style MicBuffer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style CompactMap fill:#fff3e0,stroke:#e65100,stroke-width:2px
 ```
 
 ## Layer Responsibilities
@@ -295,8 +382,9 @@ graph TB
 - **RecordingEvent/ViewEvent**: Event types
 
 ### ⚙️ Service Layer
-- **SCKScreenRecordingPipeline**: Screen/audio capture using ScreenCaptureKit
-- **SCKRecordingFileWriter**: File writing using AVFoundation
+- **SCKScreenRecordingPipeline**: Screen/audio capture using ScreenCaptureKit (always streaming)
+- **SCKRecordingFileWriter**: File writing using AVFoundation (dumb writer, no pause logic)
+- **BufferAdjuster**: Handles pause/resume timestamp adjustments using Combine operators
 - **CameraCaptureService**: Camera capture using AVFoundation
 - **SCKWindowContentService**: Window management using ScreenCaptureKit
 - **MicrophoneCaptureManager**: Microphone capture using AVAudioEngine
@@ -306,7 +394,7 @@ graph TB
 - **MockWindowContentProvider**: Window mock for testing
 
 ### 📦 Model Layer
-- **RecordingBuffer**: Unified buffer wrapper
+- **RecordingBuffer**: Unified buffer wrapper with `adjusted(with:)` method
 - **WindowReference**: Type-erased window wrapper
 - **WriterConfig**: Writer configuration
 - **RecordFileManager**: File management
@@ -314,6 +402,7 @@ graph TB
 ### 🛠️ Utilities
 - **DebugLogger**: Structured, categorized logging
 - **RecordingHelpers**: Helper functions
+- **CMSampleBuffer+retimed**: Extension for timestamp adjustment
 
 ## Key Design Patterns
 
@@ -324,6 +413,51 @@ graph TB
 5. **Orchestrator**: `ScreenRecordManager` coordinates components
 6. **Factory Method**: `WriterConfig.create()` for complex configuration
 7. **Strategy Pattern**: Different recording modes (fullscreen/window/camera)
+8. **Functional Reactive**: Combine operators (`compactMap`, `sink`) for pause/resume logic
+
+## Pause/Resume Architecture
+
+### Design Philosophy
+The pause/resume functionality is implemented using **functional reactive programming** with Combine operators, separating concerns cleanly:
+
+- **Pipeline**: Dumb streamer - always captures and emits buffers
+- **BufferAdjuster**: Smart filter - decides what to pass through and adjusts timestamps
+- **Writer**: Dumb writer - writes whatever it receives
+
+### Implementation Details
+
+```swift
+// In ScreenRecordManager
+pipeline.processedBuffers
+    .compactMap { [weak self] buffer in
+        self?.bufferAdjuster.adjust(buffer)  // Returns nil when paused
+    }
+    .sink { [weak writer] adjusted in
+        writer?.write(adjusted)  // Only called when not paused
+    }
+    .store(in: &cancellables)
+```
+
+### BufferAdjuster Logic
+
+1. **Pause**:
+   - Set `isPaused = true`
+   - Mark `pauseStartPTS` on first paused buffer
+   - Return `nil` for all buffers (dropped by `compactMap`)
+
+2. **Resume**:
+   - Set `isPaused = false`
+   - Reset `totalPauseDuration = .zero`
+   - Calculate pause duration from first resumed buffer
+   - Adjust PTS by subtracting total pause duration
+   - Return adjusted buffer
+
+3. **Benefits**:
+   - ✅ No state management in Pipeline or Writer
+   - ✅ Buffers continue flowing (no startup latency on resume)
+   - ✅ Timestamp continuity maintained in output file
+   - ✅ Testable in isolation
+   - ✅ Declarative Combine pipeline
 
 ## Benefits Achieved
 
