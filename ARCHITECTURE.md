@@ -231,40 +231,6 @@ graph LR
 
 ```
 
-## Pause/Resume Flow Architecture
-
-```mermaid
-sequenceDiagram
-    participant V as View
-    participant VM as ViewModel
-    participant M as Manager
-    participant BA as BufferAdjuster
-    participant P as Pipeline
-    participant W as Writer
-    
-    Note over V,W: Pause Flow
-    V->>VM: sendAction(.pause)
-    VM->>M: actionInput.send(.pause)
-    M->>P: actionInput.send(.pause)
-    M->>BA: pause()
-    
-    Note over P,W: Buffers Continue Flowing
-    P->>M: processedBuffers.send(buffer)
-    M->>BA: adjust(buffer)
-    BA-->>M: nil (dropped by compactMap)
-    
-    Note over V,W: Resume Flow
-    V->>VM: sendAction(.resume)
-    VM->>M: actionInput.send(.resume)
-    M->>P: actionInput.send(.resume)
-    M->>BA: resume()
-    
-    Note over P,W: Buffers Resume Processing
-    P->>M: processedBuffers.send(buffer)
-    M->>BA: adjust(buffer)
-    BA-->>M: adjusted buffer
-    M->>W: write(adjusted)
-```
 
 ## Buffer Flow Architecture with Pause/Resume
 

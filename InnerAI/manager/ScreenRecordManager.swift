@@ -43,7 +43,6 @@ class ScreenRecordManager: NSObject {
     private var cancellables = Set<AnyCancellable>()
     private let bufferAdjuster = BufferAdjuster()
     
-    private(set) var startTime: Date?
     private(set) var filePath: String?
     private(set) var fileURL: URL?
     
@@ -198,7 +197,6 @@ class ScreenRecordManager: NSObject {
     
     func start() async throws {
         DebugLogger.log(.action, "▶️ START requested")
-        startTime = Date()
         pipeline?.actionInput.send(.start)
         eventSubject.send(.started)
     }
@@ -224,28 +222,5 @@ class ScreenRecordManager: NSObject {
             return mode.pixelWidth / mode.width
         }
         return 1
-    }
-    
-    // Legacy helpers if needed by UI
-    func getRecordingLength() -> String {
-        guard let startTime = startTime else { return "00:00" }
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.minute, .second]
-        formatter.zeroFormattingBehavior = .pad
-        formatter.unitsStyle = .positional
-        return formatter.string(from: Date.now.timeIntervalSince(startTime)) ?? "00:00"
-    }
-    
-    func getRecordingSize() -> String {
-        guard let filePath = filePath else { return "Unknown" }
-        do {
-            let fileAttr = try FileManager.default.attributesOfItem(atPath: filePath)
-            let byteFormat = ByteCountFormatter()
-            byteFormat.allowedUnits = [.useMB]
-            byteFormat.countStyle = .file
-            return byteFormat.string(fromByteCount: fileAttr[FileAttributeKey.size] as! Int64)
-        } catch {
-            return "Unknown"
-        }
     }
 }
