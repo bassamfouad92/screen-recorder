@@ -229,8 +229,6 @@ graph LR
     style MW fill:#ffebee,stroke:#b71c1c,stroke-width:2px
 ```
 
-```
-
 ## Layer Responsibilities
 
 ### 🎨 UI Layer
