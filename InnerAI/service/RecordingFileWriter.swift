@@ -11,8 +11,6 @@ import AVFoundation
 protocol RecordingFileWriter {
     func write(_ buffer: RecordingBuffer)
     func finish() async throws -> URL
-    func pause() async
-    func resume() async
 }
 
 actor WriterExecutor {
@@ -41,9 +39,6 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
     private var sessionStartTime: CMTime?
     private var lastPTS: CMTime = .zero
     private var lastSampleBuffer: CMSampleBuffer?
-
-    private var pauseStart: CMTime?
-    private var accumulatedPause: CMTime = .zero
     private let outputURL: URL
     private let executor = WriterExecutor()
 
@@ -110,35 +105,6 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
         DebugLogger.log(.writer, "✅ Writer session started at \(ts.seconds)s")
     }
 
-    // MARK: - Pause / Resume
-    func pause() async {
-        await executor.run {
-            pauseStart = lastPTS
-            DebugLogger.log(.writer, "⏸️ Writer PAUSED at \(lastPTS.seconds)s")
-        }
-    }
-
-    func resume() async {
-        await executor.run {
-            if let pauseStart = pauseStart {
-                let now = lastPTS
-                let pauseDurationSeconds = CMTimeGetSeconds(now) - CMTimeGetSeconds(pauseStart)
-                guard pauseDurationSeconds > 0 else {
-                    self.pauseStart = nil
-                    return
-                }
-                
-                let pauseDuration = CMTime(seconds: pauseDurationSeconds,
-                                          preferredTimescale: now.timescale)
-                self.accumulatedPause = self.accumulatedPause + pauseDuration
-                self.pauseStart = nil
-                
-                DebugLogger.log(.writer, "▶️ Writer RESUMED (paused for \(pauseDurationSeconds)s, total pause: \(self.accumulatedPause.seconds)s)")
-            }
-        }
-    }
-
-
     // MARK: - Write
     func write(_ buffer: RecordingBuffer) {
         Task {
@@ -154,14 +120,9 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
             return
         }
 
-        let pts = CMSampleBufferGetPresentationTimeStamp(buffer.sampleBuffer)
-        lastPTS = pts
-
-        if pauseStart != nil { return }
-
-        let adjusted = CMTimeSubtract(pts, accumulatedPause)
-        guard let sampleBuffer = buffer.adjusted(with: adjusted) else { return }
-
+        let sampleBuffer = buffer.sampleBuffer
+        lastSampleBuffer = sampleBuffer
+        
         // Log every 120th buffer to avoid spam
         var writeCount = 0
         writeCount += 1
@@ -169,17 +130,16 @@ final class SCKRecordingFileWriter: RecordingFileWriter {
         switch buffer.kind {
         case .video:
             if videoInput.isReadyForMoreMediaData {
-                  lastSampleBuffer = sampleBuffer
                 _ = videoInput.append(sampleBuffer)
                 
                 if writeCount % 120 == 0 {
-                    DebugLogger.log(.writer, "💾 Writing buffers... (\(writeCount) total, current: \(adjusted.seconds)s)")
+                    let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                    DebugLogger.log(.writer, "💾 Writing buffers... (\(writeCount) total, current: \(pts.seconds)s)")
                 }
             }
 
         case .appAudio:
             if let ai = appAudioInput, ai.isReadyForMoreMediaData {
-                lastSampleBuffer = sampleBuffer
                 _ = ai.append(sampleBuffer)
             }
 

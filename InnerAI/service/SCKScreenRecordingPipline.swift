@@ -32,7 +32,6 @@ final class SCKScreenRecordingPipeline: NSObject, ScreenRecordingPipeline {
     private var excludedWindows: [SCWindow] = []
     private var displayID: CGDirectDisplayID = 0
     private var mode: RecordMode = .h264_sRGB
-    private var isPaused = false
     private var stream: SCStream?
 
     private let audioManager = MicrophoneCaptureManager()
@@ -140,7 +139,7 @@ final class SCKScreenRecordingPipeline: NSObject, ScreenRecordingPipeline {
     private func bindMic() {
         audioManager.micBuffers
             .sink { [weak self] buffer in
-                guard let self = self, !self.isPaused else { return }
+                guard let self = self else { return }
                 self.processedBuffersSubject.send(RecordingBuffer(sampleBuffer: buffer, kind: .microphone))
             }
             .store(in: &cancellables)
@@ -180,11 +179,9 @@ final class SCKScreenRecordingPipeline: NSObject, ScreenRecordingPipeline {
             Task { await start() }
 
         case .pause:
-            isPaused = true
             DebugLogger.log(.pipeline, "Pipeline PAUSED")
 
         case .resume:
-            isPaused = false
             DebugLogger.log(.pipeline, "Pipeline RESUMED")
 
         case .stop:
@@ -284,10 +281,8 @@ extension SCKScreenRecordingPipeline: SCStreamDelegate, SCStreamOutput {
         didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
         of outputType: SCStreamOutputType
     ) {
-        if !isPaused {
-            let kind: RecordingBuffer.BufferKind = outputType == .screen ? .video : .appAudio
-            processedBuffersSubject.send(RecordingBuffer(sampleBuffer: sampleBuffer, kind: kind))
-        }
+        let kind: RecordingBuffer.BufferKind = outputType == .screen ? .video : .appAudio
+        processedBuffersSubject.send(RecordingBuffer(sampleBuffer: sampleBuffer, kind: kind))
     }
     
     func stream(_ stream: SCStream, didStopWithError error: Error) { // stream error

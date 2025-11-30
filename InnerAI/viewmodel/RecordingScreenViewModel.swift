@@ -209,10 +209,8 @@ class RecordingScreenViewModel: ObservableObject {
             screenRecordManager.actionInput.send(.stop)
             cameraService.stopSession()
             
-            // Wait a bit then restart
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
             
-            // Signal restart to control panel
             await MainActor.run {
                 restartPerformed = true
             }
@@ -261,8 +259,7 @@ class RecordingScreenViewModel: ObservableObject {
         do {
             selectedWindow = try await windowContentProvider.getWindow(withTitle: "CameraWindow")
             
-            // Delay then signal ready
-            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
             await MainActor.run {
                 isReadyToStart = true
             }
@@ -272,9 +269,7 @@ class RecordingScreenViewModel: ObservableObject {
     }
     
     func setupWindowsForFullScreen() async {
-        // No specific windows needed for fullscreen
-        // Delay then signal ready
-        try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+        try? await Task.sleep(nanoseconds: 3_000_000_000)
         await MainActor.run {
             isReadyToStart = true
         }

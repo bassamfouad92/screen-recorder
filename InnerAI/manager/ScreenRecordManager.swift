@@ -41,6 +41,7 @@ class ScreenRecordManager: NSObject {
     private var pipeline: (any ScreenRecordingPipeline)?
     private var writer: (any RecordingFileWriter)?
     private var cancellables = Set<AnyCancellable>()
+    private let bufferAdjuster = BufferAdjuster()
     
     private(set) var startTime: Date?
     private(set) var filePath: String?
@@ -69,11 +70,11 @@ class ScreenRecordManager: NSObject {
         Task {
             switch action {
             case .start:
-                break // Already started in record()
+                break
             case .pause:
-                await handlePause()
+                handlePause()
             case .resume:
-                await handleResume()
+                handleResume()
             case .stop:
                 await handleStop()
             case .restart:
@@ -84,30 +85,34 @@ class ScreenRecordManager: NSObject {
         }
     }
     
-    private func handlePause() async {
+    private func handlePause() {
         DebugLogger.log(.action, "⏸️ PAUSE requested")
         pipeline?.actionInput.send(.pause)
-        await writer?.pause()
+        bufferAdjuster.pause()
     }
     
-    private func handleResume() async {
+    private func handleResume() {
         DebugLogger.log(.action, "▶️ RESUME requested")
         pipeline?.actionInput.send(.resume)
-        await writer?.resume()
+        bufferAdjuster.resume()
     }
     
     private func handleStop() async {
         do {
-            try await stopRecording()
+            DebugLogger.log(.action, "⏹️ STOP requested")
+            pipeline?.actionInput.send(.stop)
+            let url = try await writer?.finish()
+            if let url = url {
+                eventSubject.send(.stopped(url))
+            }
         } catch {
-            DebugLogger.log(.error, "Failed to stop recording: \(error)")
-            eventSubject.send(.error(.captureStopFailed(error.localizedDescription)))
+            pipeline?.actionInput.send(.stop)
+            eventSubject.send(.error(.custom(error.localizedDescription)))
         }
     }
     
     private func handleRestart() async {
         await handleStop()
-        // Restart logic should be handled by ViewModel
     }
     
     private func handleDelete() async {
@@ -170,12 +175,15 @@ class ScreenRecordManager: NSObject {
         self.pipeline = pipeline
         DebugLogger.log(.info, "⚡️ Pipeline initialized")
         
-        // 5. Connect Pipeline to Writer
         pipeline.processedBuffers
-            .sink { [weak writer] buffer in
-                writer?.write(buffer)
+            .compactMap { [weak self] buffer in
+                self?.bufferAdjuster.adjust(buffer)
+            }
+            .sink { [weak writer] adjusted in
+                writer?.write(adjusted)
             }
             .store(in: &cancellables)
+        
         DebugLogger.log(.info, "🔗 Pipeline connected to Writer")
             
         pipeline.errorPublisher
