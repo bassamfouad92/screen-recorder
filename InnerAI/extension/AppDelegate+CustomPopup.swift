@@ -42,8 +42,8 @@ extension AppDelegate {
         hideCameraWindow()
     }
     
-    func showCameraWindow(viewModel: ContentViewModel, presentationStyle: CameraViewPresentationStyle, offset: CGSize, screenSize: CGRect, displayId: CGDirectDisplayID = CGMainDisplayID()) {
-        self.cameraWindow?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(presentationStyle: presentationStyle, offset: offset, viewModel: viewModel, screenSize: screenSize).environmentObject(self))
+    func showCameraWindow(service: any CameraCaptureProvider, presentationStyle: CameraViewPresentationStyle, offset: CGSize, screenSize: CGRect, displayId: CGDirectDisplayID = CGMainDisplayID()) {
+        self.cameraWindow?.contentView = NSHostingView(rootView: CameraPreviewOverlayView(presentationStyle: presentationStyle, offset: offset, service: service, screenSize: screenSize).environmentObject(self))
         if presentationStyle == .full {
             cameraWindow?.level = .normal
         } else {

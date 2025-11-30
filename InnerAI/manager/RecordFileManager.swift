@@ -12,6 +12,12 @@ class RecordFileManager {
     
     private init() {}
     
+    func makeVideoFileURL(extension ext: String) throws -> URL {
+        let dir = FileUtils.createDirectoryInDocuments(withName: "inneraivideos")
+        let filename = "recording-\(Date()).\(ext)"
+        return dir.appendingPathComponent(filename)
+    }
+    
     func deleteFile(atPath path: String) {
         let fileManager = FileManager.default
         do {

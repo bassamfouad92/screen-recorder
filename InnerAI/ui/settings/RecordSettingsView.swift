@@ -126,7 +126,7 @@ struct RecordSettingsView: View {
                    setupCameraOption()
                    setupMicrophoneOption()
                    //delete all saved files
-                   RecordFileManager.shared.deleteAllMP4Files()
+                   //RecordFileManager.shared.deleteAllMP4Files()
                }
                 
                 Button(action: {

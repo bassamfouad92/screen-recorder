@@ -14,36 +14,36 @@ enum Environment: String {
     var baseUrl: String {
         switch self {
         case .staging:
-            return "https://platformapi-staging.innerai.com"
+            return "https://platformapi-staging.com"
         case .production:
-            return "https://platformapi.innerai.com"
+            return "https://platformapi.com"
         }
     }
     
     var uploadInitUrl: String {
         switch self {
         case .staging:
-            return "https://processing-staging.innerplay.io/cloud_upload_init"
+            return "https://processing-staging.io/cloud_upload_init"
         case .production:
-            return "https://processing.innerplay.io/cloud_upload_init"
+            return "https://processing.io/cloud_upload_init"
         }
     }
     
     var uploadCompleteUrl: String {
         switch self {
         case .staging:
-            return "https://service-staging.innerplay.io/cloud-upload-done"
+            return "https://service-staging.io/cloud-upload-done"
         case .production:
-            return "https://service.innerplay.io/cloud-upload-done"
+            return "https://service.io/cloud-upload-done"
         }
     }
 
     var platformUrl: String {
         switch self {
         case .staging:
-            return "https://app-staging.innerai.com"
+            return "https://app-staging.com"
         case .production:
-            return "https://app.innerai.com"
+            return "https://app.com"
         }
     }
 }

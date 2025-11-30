@@ -18,7 +18,7 @@ enum RecordingState: Equatable {
             case (.inProgress, .inProgress):
                 return true
             case let (.stopped(info1), .stopped(info2)):
-                return info1.name == info2.name // Assuming FileInfo conforms to Equatable
+                return info1.name == info2.name
             case (.deleted, .deleted):
                 return true
             default:
@@ -27,7 +27,7 @@ enum RecordingState: Equatable {
         }
 }
 
-struct VideoView: View {
+struct RecordingScreenView: View {
     
     let screenSize: NSRect
     let recordConfig: RecordConfiguration
@@ -145,7 +145,7 @@ struct VideoView: View {
     }
 }
 // MARK: Lifecycle functions
-extension VideoView {
+extension RecordingScreenView {
     private func viewDidAppear() {
         moveWindowToExternalIfNeeded()
         viewModel.selectedCamera = recordConfig.selectedCamera
@@ -201,7 +201,7 @@ extension VideoView {
 
 // MARK: Screen capture kit recordering functions
 //
-extension VideoView {
+extension RecordingScreenView {
     private func initRecorder() async {
         do {
             url = URL(filePath: FileManager.default.currentDirectoryPath).appending(path: "recording-bsm \(Date()).mov")
@@ -254,7 +254,7 @@ extension VideoView {
 
 // MARK: Record operations function
 //
-extension VideoView {
+extension RecordingScreenView {
     private func deleteRecording() {
         displayingActionPopup = true
         screenRecordManager?.isPause = true

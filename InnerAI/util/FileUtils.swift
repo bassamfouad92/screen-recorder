@@ -8,7 +8,8 @@
 import Foundation
 
 struct FileUtils {
-    public static func createDirectoryInDocuments(withName name: String) {
+    @discardableResult
+    public static func createDirectoryInDocuments(withName name: String) -> URL {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let newDirectoryURL = documentsURL.appendingPathComponent(name)
@@ -23,5 +24,7 @@ struct FileUtils {
         } else {
             print("Directory already exists at path: \(newDirectoryURL.path)")
         }
+        
+        return newDirectoryURL
     }
 }

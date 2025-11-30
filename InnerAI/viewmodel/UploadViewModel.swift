@@ -100,7 +100,7 @@ class UploadViewModel: ObservableObject {
     
     func cancelUpload() {
         //delete all mp4 files
-        RecordFileManager.shared.deleteAllMP4Files()
+        //RecordFileManager.shared.deleteAllMP4Files()
         fileUploader.cancelUpload()
     }
     

@@ -8,15 +8,6 @@
 import SwiftUI
 import Combine
 
-enum RecordingAction {
-    case stop
-    case pause
-    case resume
-    case restart
-    case delete
-    case drag
-}
-
 struct ControlPanelView: View {
     
     @State var isPlaying: Bool = true
@@ -25,7 +16,7 @@ struct ControlPanelView: View {
     @Binding var restartRecording: Bool
     @Binding var isPopupDisplayed: Bool
 
-    var onClicked: (RecordingAction) -> Void
+    var onClicked: (RecordAction) -> Void
     
     @State private var showTooltip = false
     @State private var showFinishTooltip = false
